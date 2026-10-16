@@ -1,0 +1,43 @@
+/* Cloud-backed renovation owner workspace. */
+.rc-quote-line{display:grid;grid-template-columns:1fr 1fr 1.3fr 1.5fr 60px 75px 90px auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line,#e8e8e8)}
+.rc-quote-line .field{min-width:0;width:100%}.rc-quote-line label{white-space:nowrap;font-size:12px}
+@media(max-width:900px){.rc-quote-line{grid-template-columns:1fr 1fr}.rc-quote-line label{grid-column:1/-1}}
+/* Full-page renovation quote worksheet. */
+.reno-quote-editor{width:100%;max-width:none;margin:0;padding:0 0 28px}
+.reno-quote-meta{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:10px;padding:16px;background:var(--surface,#fff);border:1px solid var(--line,#e2e5e9);border-radius:14px;margin:10px 0 18px}
+.reno-quote-meta label{display:grid;gap:5px;min-width:0;font-size:12px;color:var(--muted,#68717d);white-space:nowrap}
+.reno-quote-meta .field{width:100%;min-width:0;font-size:13px;padding:8px 7px}
+.reno-quote-meta input[type=hidden]{display:none}
+.reno-quote-section{margin:0 0 18px;padding:14px;background:var(--surface,#fff);border:1px solid var(--line,#e2e5e9);border-radius:14px;min-width:0}
+.reno-quote-section>header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 10px}
+.reno-quote-section>header h2{font-size:16px;margin:0;color:var(--ink,#20242a)}
+.reno-quote-columns,.reno-quote-row{display:grid;grid-template-columns:38px minmax(170px,1.25fr) 64px 76px 88px 96px minmax(210px,1.7fr) 34px;gap:8px;align-items:start}
+.reno-quote-columns{padding:9px 8px;background:#f6f7f8;border-radius:8px;font-size:12px;font-weight:700;color:var(--muted,#68717d)}
+.reno-quote-row{padding:9px 8px;border-bottom:1px solid var(--line,#e8eaed);align-items:center}
+.reno-quote-row .field{width:100%;min-width:0;max-width:100%;padding:8px 7px;font-size:13px}
+.reno-quote-row textarea.field{resize:none;overflow:hidden;line-height:1.45;min-height:58px;white-space:pre-wrap;overflow-wrap:anywhere}
+.reno-quote-item-cell{display:grid;gap:6px;min-width:0}
+.reno-quote-item-cell select,.reno-quote-item-cell input{width:100%;min-width:0}
+.reno-quote-row>[data-rc-line-amount],.reno-quote-row>[data-rs-line-amount]{font-size:13px;text-align:right;white-space:nowrap}
+.reno-quote-row>[data-rc-line-seq],.reno-quote-row>[data-rs-line-seq]{text-align:center;color:var(--muted,#68717d)}
+.reno-quote-subtotal{text-align:right;margin:10px 4px 0;color:var(--muted,#68717d)}
+.reno-quote-subtotal strong{color:var(--ink,#20242a);margin-left:10px}
+.reno-quote-grand{display:flex;justify-content:flex-end;align-items:center;gap:18px;flex-wrap:wrap;padding:16px 18px;background:var(--surface,#fff);border:1px solid var(--line,#e2e5e9);border-radius:12px}
+.reno-quote-grand>div{display:grid;gap:4px;color:var(--muted,#68717d);font-size:12px}
+.reno-quote-grand strong{color:var(--ink,#20242a);font-size:16px;white-space:nowrap}
+.reno-quote-grand .grand-total{padding-left:18px;border-left:1px solid var(--line,#e2e5e9)}
+.reno-quote-grand .grand-total strong{font-size:22px;color:#9a6b16}
+.reno-quote-submit{display:flex;justify-content:flex-end;margin-top:14px}
+.reno-quote-submit .btn{min-width:170px;min-height:44px}
+@media(max-width:1350px){.reno-quote-meta{grid-template-columns:repeat(5,minmax(0,1fr))}.reno-quote-columns,.reno-quote-row{grid-template-columns:34px minmax(145px,1.2fr) 58px 68px 78px 84px minmax(170px,1.5fr) 30px;gap:6px}}
+@media(max-width:900px){.reno-quote-meta{grid-template-columns:repeat(2,minmax(0,1fr));padding:12px}.reno-quote-section{padding:10px}.reno-quote-columns{display:none}.reno-quote-row{grid-template-columns:28px minmax(0,1fr) 62px 74px;gap:7px}.reno-quote-row>[data-rc-line-amount],.reno-quote-row>[data-rs-line-amount]{grid-column:4;text-align:right}.reno-quote-row textarea.field{grid-column:2/5}.reno-quote-row .icon-btn{grid-column:1;grid-row:3}.reno-quote-grand{justify-content:stretch;gap:12px}.reno-quote-grand>div{flex:1 1 28%}.reno-quote-grand .grand-total{border:0;padding:0}.reno-quote-submit .btn{width:100%}}
+@media(max-width:480px){.reno-quote-meta{gap:8px}.reno-quote-meta .field{font-size:12px}.reno-quote-section>header h2{font-size:14px}.reno-quote-row{grid-template-columns:24px minmax(0,1fr) 54px 64px;padding:7px 2px;gap:5px}.reno-quote-row .field{font-size:12px;padding:7px 5px}.reno-quote-grand{padding:12px}.reno-quote-grand strong{font-size:14px}.reno-quote-grand .grand-total strong{font-size:20px}}
+/* Customer-level documents and needs remain usable on narrow screens. */
+#foRenoProfileForm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#foRenoProfileForm label.full{grid-column:1/-1}
+#foRenoProfileForm textarea{min-height:70px;resize:vertical}
+.rc-document-list{display:grid;gap:8px;margin-top:14px}
+.rc-document-list>p{margin:0;padding:10px;border:1px solid var(--line,#e5e8eb);border-radius:9px}
+@media(max-width:600px){#foRenoProfileForm{grid-template-columns:1fr}#foRenoProfileForm label.full{grid-column:auto}}
+/* Keep quote metadata in one scan line on desktop; reflow only on compact screens. */
+@media(min-width:1200px){.reno-quote-meta{grid-template-columns:repeat(10,minmax(0,1fr));gap:5px;padding:12px}.reno-quote-meta label{font-size:11px}.reno-quote-meta .field{font-size:12px;padding:7px 5px}}

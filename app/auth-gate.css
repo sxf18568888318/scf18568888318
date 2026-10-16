@@ -1,0 +1,156 @@
+/* =====================================================================
+   艺匠全屋定制 · 云端登录与权限门禁样式（auth-gate）修复段
+   用途：阶段0 permfix9 已实现的“未登录先拦截、登录后按角色隔离”的外观层。
+   问题：第4步重新生成 framework-preview.css 时，本段在产物中整体丢失，
+        导致未登录直接露出演示框架与金额、#authGate 登录卡碎在左上角无法登录。
+
+   【给 Codex 的接入要求（务必照做）】
+   1. 不要只手改 dist/framework-preview.css（下次构建会被覆盖）。
+      必须把本段完整并入“生成 dist/framework-preview.css 的那个 CSS 源文件/构建模板”，
+      再重新运行构建/同步脚本，让产物里稳定包含本段。
+   2. 构建后自检：dist/framework-preview.css 中必须能搜到
+      #authGate、body.auth-required、.auth-hidden、.auth-user-menu、.auth-cloud-strip。
+   3. dist/index.html 引用 css/js 时统一带新的一致版本号（当前 css 无版本号、
+      两个 js 仍挂 ?rev=permfix9，需一并更新，避免缓存错乱）。
+   4. 选择器与 auth-gate.js 注入的 DOM/操作的 class 一一对应，勿改名。
+   ===================================================================== */
+
+/* 启动瞬间（getSession 异步未决）先隐藏业务框架，防止演示数据一闪而过；
+   仅在非演示模式下由 auth-gate.js 的 ensureShellState 添加 */
+.shell.auth-pending { visibility: hidden; }
+
+/* 未登录：彻底隐藏演示/业务框架与浮层（遮罩由 #authGate 接管） */
+body.auth-required .shell { display: none !important; }
+body.auth-required #toast,
+body.auth-required #modalRoot { display: none !important; }
+
+/* 全屏登录遮罩 + 居中卡片 */
+#authGate.auth-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+  background: rgba(15, 35, 30, .55);
+  backdrop-filter: blur(2px);
+}
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  box-sizing: border-box;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .25);
+  padding: 28px 28px 22px;
+}
+
+/* 卡片头部品牌 */
+.auth-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.auth-brand .brand-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: #163f34; color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 700;
+}
+.auth-brand strong { display: block; font-size: 16px; color: #163f34; }
+.auth-brand small { display: block; color: #7a8a84; font-size: 12px; margin-top: 2px; }
+
+.auth-kicker { font-size: 12px; letter-spacing: .12em; color: #2e7d63; font-weight: 600; }
+#authGateTitle { margin: 6px 0; font-size: 24px; color: #163f34; }
+.auth-help { margin: 0 0 18px; font-size: 13px; line-height: 1.6; color: #6b7a74; }
+
+/* 表单字段 */
+.auth-field { display: block; margin-bottom: 14px; }
+.auth-field > span { display: block; font-size: 13px; color: #3a4a44; margin-bottom: 6px; }
+.auth-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 12px;
+  font-size: 14px;
+  border: 1px solid #cfd9d5;
+  border-radius: 10px;
+  background: #fafcfb;
+}
+.auth-field input:focus {
+  outline: none;
+  border-color: #2e7d63;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(46, 125, 99, .12);
+}
+.auth-error { min-height: 18px; color: #c0392b; font-size: 13px; margin: 2px 0 8px; }
+.auth-submit {
+  width: 100%;
+  margin-top: 4px;
+  padding: 12px;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #163f34;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+}
+.auth-submit:hover { background: #1d5143; }
+.auth-submit:disabled { opacity: .6; cursor: default; }
+.auth-foot { margin-top: 14px; font-size: 12px; line-height: 1.6; color: #93a09a; text-align: center; }
+
+/* 登录后：隐藏“演示身份”角色切换器（关键，禁止前端切角色越权） */
+.auth-hidden { display: none !important; }
+
+/* 右上角真实登录用户条 */
+.auth-user-menu { display: inline-flex; align-items: center; gap: 8px; }
+.auth-user-menu .auth-role {
+  background: #e7f1ed; color: #1d5143;
+  border-radius: 999px; padding: 3px 10px;
+  font-size: 12px; font-weight: 600;
+}
+.auth-user-menu .auth-email { font-size: 12px; color: #5b6b65; }
+.auth-user-menu .auth-logout {
+  border: 1px solid #cfd9d5; background: #fff; color: #3a4a44;
+  border-radius: 8px; padding: 4px 10px; font-size: 12px; cursor: pointer;
+}
+.auth-user-menu .auth-logout:hover { border-color: #163f34; color: #163f34; }
+.auth-user-menu .auth-profile {
+  border: 1px solid #cfd9d5; background: #fff; color: #1d5143;
+  border-radius: 8px; padding: 4px 10px; font-size: 12px; cursor: pointer;
+}
+.auth-user-menu .auth-profile:hover { border-color: #163f34; background: #f3f8f5; }
+.auth-profile-overlay {
+  position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center;
+  padding: 20px; overflow-y: auto; background: rgba(15, 35, 30, .52); backdrop-filter: blur(2px);
+}
+.auth-profile-card {
+  position: relative; width: min(100%, 440px); box-sizing: border-box; padding: 28px;
+  border-radius: 16px; background: #fff; box-shadow: 0 24px 60px rgba(0,0,0,.25);
+}
+.auth-profile-card h2 { margin: 6px 0 8px; color: #163f34; font-size: 22px; }
+.auth-profile-card .auth-help { overflow-wrap: anywhere; }
+.auth-profile-close {
+  position: absolute; top: 12px; right: 14px; width: 36px; height: 36px;
+  border: 0; border-radius: 50%; background: transparent; color: #52635c; font-size: 26px; cursor: pointer;
+}
+.auth-profile-actions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 12px; }
+.auth-profile-actions .auth-submit { width: auto; min-width: 140px; margin: 0; padding: 10px 14px; }
+.auth-profile-actions .auth-submit:disabled { opacity: .6; }
+@media(max-width:760px) {
+  .auth-user-menu { gap: 5px; }
+  .auth-user-menu .auth-email, .auth-user-menu .auth-role { display: none; }
+  .auth-user-menu .auth-profile, .auth-user-menu .auth-logout { padding: 6px 8px; }
+  .auth-profile-card { padding: 24px 20px; }
+}
+
+/* 登录后顶部提示条由“离线演示黄条”变为“云端权限版” */
+.demo-strip.auth-cloud-strip { background: #e9f4ef; color: #1d5143; border-color: #bfe0d3; }
+.demo-strip.auth-cloud-strip > span { color: #2e7d63; }
+.auth-brand .brand-icon { width:60px;height:60px;object-fit:contain;background:transparent;border:0;border-radius:0;box-shadow:none; }
+
+/* Brand assets use their own transparent gold mark without a backing tile. */
+.brand-icon{width:38px;height:38px;object-fit:contain;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;display:block;flex:none}
+.mobile-brand .brand-icon{width:32px;height:32px}
+.brand-document-logo{width:190px;max-width:48vw;height:auto;max-height:56px;object-fit:contain;vertical-align:middle;margin-right:10px}
+.brand-doc-heading{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.brand-doc-heading img{width:190px;max-width:48vw;height:auto;max-height:56px;object-fit:contain}
+@media(max-width:760px){.mobile-brand .brand-icon{width:30px;height:30px}}

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#163f34">
+  <title>艺匠全屋定制 · 整装·定制·工厂</title>
+  <link rel="icon" type="image/x-icon" href="assets/brand/yijiang-favicon.ico?v=20261017014356">
+  <link rel="apple-touch-icon" href="assets/brand/yijiang-icon-180.png?v=20261017014356">
+  <link rel="stylesheet" href="framework-preview.css?v=20261017014356">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" id="appSidebar" aria-label="业务导航">
+      <a class="brand" href="#" aria-label="艺匠全屋定制首页"><img class="brand-icon" src="assets/brand/yijiang-icon-512.png?v=20261017014356" alt="艺匠全屋定制"><span><b>艺匠全屋定制</b><small>整装 · 定制 · 工厂</small></span></a>
+      <div class="side-caption">业务模块</div>
+      <nav class="module-nav" id="moduleNav"></nav>
+      <div class="side-caption side-caption-spaced">工作台</div>
+      <nav class="page-nav" id="pageNav"></nav>
+      <div class="side-foot"><span class="pulse"></span><span><b>交互演示版</b><small>示例数据 · 本机预览</small></span></div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <button class="mobile-nav-toggle" id="mobileNavToggle" type="button" aria-label="打开导航菜单" aria-controls="appSidebar" aria-expanded="false">☰</button>
+        <div class="mobile-brand"><img class="brand-icon" src="assets/brand/yijiang-icon-512.png?v=20261017014356" alt="艺匠全屋定制"><b>艺匠全屋定制</b></div>
+        <div class="topbar-crumb"><span>经营工作台</span><i>/</i><b id="crumbModule">总览</b></div>
+        <div class="top-actions">
+          <span class="today" id="todayLabel"></span>
+          <button class="icon-only notification" aria-label="通知" data-action="notice">♧<em></em></button>
+          <label class="role-select-wrap"><span>演示身份</span><select id="roleSelect" aria-label="切换演示角色"></select></label>
+          <span class="avatar" id="roleAvatar">管</span>
+        </div>
+      </header>
+      <div class="demo-strip"><span>✦</span> 演示数据仅用于确认业务流程。正式员工账号、数据隔离和在线共享将在后续部署阶段实现。<button data-action="dismiss-strip" aria-label="关闭提示">×</button></div>
+      <section id="view" class="content"></section>
+    </main>
+    <button class="mobile-nav-backdrop" id="mobileNavBackdrop" type="button" aria-label="关闭导航菜单" tabindex="-1"></button>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <div id="modalRoot"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth-gate.js?v=20261017014356"></script>
+  <script src="framework-preview.js?v=20261017014356"></script>
+</body>
+</html>

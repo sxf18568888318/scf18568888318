@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#216a50">
+  <title>整装与定制经营台 · 单机试用版</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">居</div>
+        <div><strong>整装 · 全屋定制</strong><span>经营工作台</span></div>
+      </div>
+      <div class="workspace-label">工作空间</div>
+      <nav id="mainNav" class="main-nav" aria-label="主导航"></nav>
+      <div class="sidebar-bottom">
+        <span class="local-dot"></span>
+        <div><strong>单机试用版</strong><small>数据保存在当前浏览器</small></div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div class="topbar-title">
+          <div class="eyebrow">安阳 · 业务管理</div>
+          <h1 id="pageTitle">工作概览</h1>
+        </div>
+        <div class="topbar-actions">
+          <div id="designerIdentity" class="identity-picker">
+            <span class="identity-avatar">设</span>
+            <label for="designerSelect">试用身份</label>
+            <select id="designerSelect" aria-label="选择试用设计师"></select>
+          </div>
+          <span id="ownerBadge" class="owner-badge hidden">老板管理端</span>
+          <button id="ownerAccessBtn" class="button button-outline" type="button">老板入口</button>
+          <button id="designerAccessBtn" class="button button-outline hidden" type="button">返回设计师端</button>
+        </div>
+      </header>
+
+      <div class="demo-banner">
+        <span class="banner-icon">i</span>
+        <span><strong>单机试用版</strong>　客户、报价与费用仅保存在这台电脑的当前浏览器中；角色入口用于试用，不是正式账号权限。</span>
+        <button id="clearDemoBtn" class="text-button" type="button">清除演示样例</button>
+      </div>
+
+      <section id="appContent" class="content-area" aria-live="polite"></section>
+    </main>
+  </div>
+
+  <div id="dialogRoot"></div>
+  <input id="backupFile" type="file" accept="application/json,.json" class="visually-hidden">
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+/* Practical renovation workflows, October 2026. */
+.workshop-layout{grid-template-columns:minmax(0,1fr)}
+.workshop-layout>.workshop-main,.workshop-layout>.ux-whole-rooms{grid-column:1/-1;min-width:0;width:100%}
+.workshop-sheet,.workshop-main{min-width:0}
+.workshop-category-strip button,.workshop-sheet-actions .btn{white-space:nowrap;width:auto;min-width:80px}
+.nw-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:14px 18px;border-bottom:1px solid #e3eae6}
+.nw-controls .field{width:auto;min-width:110px}
+.nw-note{padding:12px 18px;background:#eef6f1;color:#3e6656;font-size:13px;line-height:1.6}
+.nw-stage-board{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.nw-stage{background:#f7faf8;border:1px solid #dbe7e0;border-radius:12px;padding:18px;text-align:left;color:#163e30;min-height:115px;cursor:pointer}
+.nw-stage strong,.nw-stage small{display:block;margin-top:10px}
+.nw-stage.active{background:#e9f5ed;border-color:#227252}
+.nw-stage.done{border-left:5px solid #347b54}
+.nw-photo-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.nw-photo-gallery img{width:100%;height:150px;object-fit:cover;border-radius:9px}
+.nw-memo{padding:14px;border-left:3px solid #d4a343;background:#fff9e9;margin-bottom:10px;display:flex;justify-content:space-between;gap:12px}
+.nw-memo.done{opacity:.65;border-color:#93ad9c;background:#f6f8f6}
+.nw-contract{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:16px;background:#f0f7f2;border-radius:12px;margin-bottom:18px}
+.nw-contract strong{font-size:24px;color:#215d43}
+.nw-document{max-width:1100px;margin:auto;background:white;padding:0!important;color:#23382d}
+.modal.nw-document-modal{width:min(1180px,96vw);max-width:1180px}
+.nw-document-modal .modal-body{overflow:auto}
+.nw-document-modal .nw-document{min-width:820px}
+.nw-document header{background:linear-gradient(110deg,#2e5b40,#47845d);color:white;padding:32px 38px;display:flex;justify-content:space-between;gap:20px}
+.nw-document header h1{margin:0 0 8px;font-size:30px;color:white}
+.nw-document header b{font-size:19px}
+.nw-document-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;padding:26px 38px;border-bottom:1px solid #e8eeea}
+.nw-document-meta small,.nw-document-meta b{display:block;margin:5px 0}
+.nw-document-body{padding:24px 38px}
+.nw-document h2{font-size:18px;border-left:5px solid #48845c;padding-left:12px;margin:26px 0 14px}
+.nw-document table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:12px}
+.nw-document th{background:#f3f5f3;padding:12px 8px;text-align:left;border-bottom:2px solid #dce4dd}
+.nw-document td{padding:13px 8px;vertical-align:top;border-bottom:1px solid #e4eae5;word-break:break-word}
+.nw-document td:nth-last-child(2){white-space:nowrap}
+.nw-document .nw-remarks{font-size:11px;line-height:1.65;color:#586b5e}
+.nw-document-total{background:linear-gradient(110deg,#2e5b40,#47845d);border-radius:12px;padding:24px;display:flex;align-items:center;justify-content:space-between;color:white;margin-top:25px;gap:20px}
+.nw-document-total strong{font-size:35px;color:#f2d956;white-space:nowrap}
+.nw-signatures{display:flex;justify-content:space-between;padding:26px 38px;border-top:1px solid #e6ece7}
+.nw-payment-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.modal:has(#nwLibrarySearch){width:min(1180px,96vw)}
+@media(max-width:760px){.nw-document-meta{grid-template-columns:1fr}.nw-document header,.nw-document-body,.nw-signatures{padding:20px}.nw-document-total{flex-direction:column;align-items:flex-start}.workshop-line-table.ux-whole-table{min-width:950px}.nw-contract{align-items:flex-start}.nw-stage-board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media print{.nw-document,.nw-document-modal .nw-document{max-width:none;min-width:0}.nw-document header,.nw-document-total{-webkit-print-color-adjust:exact;print-color-adjust:exact}.nw-document table{font-size:10px}.nw-document-body{padding:12px 20px}.nw-document tr{break-inside:avoid}.nw-document .nw-remarks{font-size:9px}}

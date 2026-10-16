@@ -1,0 +1,53 @@
+.yj-business-net-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin:22px 0}.yj-product-tabs{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}.rc-customer-tabs{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}.rc-customer-tabs a{padding:9px 15px;background:#fff;border:1px solid #dbe6df;border-radius:10px;color:#235e4a;text-decoration:none}.rc-embedded-order{margin:24px 0;padding-top:12px;border-top:2px solid #d7e7de}.rc-embedded-order .page-head{margin-top:14px}.rc-photo-list{display:grid;gap:10px}.fc-checklist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:14px 0}.fc-checklist div{padding:12px;border:1px solid #e4eae5;border-radius:10px}.fc-empty-capability{padding:16px;color:#738077;background:#f8faf9;border-radius:10px;line-height:1.7}.fc-exports{display:flex;gap:8px;flex-wrap:wrap}.fc-dossier-tabs a{cursor:pointer}.fc-dossier-tabs{scroll-margin-top:80px}.rc-customer-tabs~section{scroll-margin-top:80px}
+@media(max-width:700px){.yj-business-net-cards{grid-template-columns:1fr}.rc-customer-tabs a{padding:8px 11px}.fc-checklist{grid-template-columns:1fr}.fc-attendance-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Keep native hidden inputs hidden even when the shared .field rules apply. */
+.reno-quote-row [hidden]{display:none!important}
+.reno-quote-row .reno-quote-calc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;min-width:0;align-self:start}
+.reno-quote-row .reno-quote-calc [data-rc-mode],.reno-quote-row .reno-quote-calc [data-rs-mode]{grid-column:1/-1}
+.reno-quote-row .reno-quote-calc [data-rc-width],.reno-quote-row .reno-quote-calc [data-rs-width]{grid-column:1}
+.reno-quote-row .reno-quote-calc [data-rc-height],.reno-quote-row .reno-quote-calc [data-rs-height]{grid-column:2}
+.reno-quote-row .reno-quote-calc [data-rc-length],.reno-quote-row .reno-quote-calc [data-rs-length],.reno-quote-row .reno-quote-calc [data-rc-qty],.reno-quote-row .reno-quote-calc [data-rs-qty]{grid-column:1/-1}
+.reno-quote-row .reno-quote-calc [readonly]{background:#f4f7f5;color:#52675d}
+@media(min-width:901px){
+  .reno-quote-row[data-pricing-mode="投影"],.reno-quote-row[data-pricing-mode="平方"],.reno-quote-row[data-pricing-mode="延米"]{grid-template-columns:34px minmax(145px,1.2fr) 58px minmax(180px,1.35fr) 78px 84px minmax(170px,1.5fr) 30px;gap:6px}
+}
+@media(max-width:900px){
+  .reno-quote-row .reno-quote-calc{grid-column:2/5;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .reno-quote-row .reno-quote-calc [data-rc-qty],.reno-quote-row .reno-quote-calc [data-rs-qty]{grid-column:1/-1}
+}
+
+/* Projection rows need real space for two editable dimensions at narrow desktop widths. */
+@media(min-width:901px) and (max-width:1350px){
+  .reno-quote-row[data-pricing-mode="投影"],.reno-quote-row[data-pricing-mode="平方"],.reno-quote-row[data-pricing-mode="延米"]{grid-template-columns:30px minmax(170px,1.25fr) 58px minmax(160px,1fr) 72px 78px minmax(170px,1.35fr) 28px;gap:6px}
+  .reno-quote-row .reno-quote-calc{grid-column:auto;min-width:160px}
+}
+
+/* Keep scanned invoice rows on screen at desktop width and turn them into review cards on phones. */
+.modal.fc-purchase-modal{width:min(1680px,98vw)!important;max-width:1680px!important}
+.fc-purchase-workbench{grid-template-columns:minmax(220px,260px) minmax(0,1fr);gap:14px}
+.fc-purchase-lines-wrap{overflow:visible}
+.fc-purchase-lines{min-width:0;width:100%;table-layout:fixed}
+.fc-purchase-lines th:nth-child(1){width:34%}.fc-purchase-lines th:nth-child(2){width:12%}.fc-purchase-lines th:nth-child(3){width:14%}.fc-purchase-lines th:nth-child(4){width:32%}.fc-purchase-lines th:nth-child(5){width:8%}
+.fc-purchase-lines.owner th:nth-child(1){width:22%}.fc-purchase-lines.owner th:nth-child(2){width:8%}.fc-purchase-lines.owner th:nth-child(3){width:9%}.fc-purchase-lines.owner th:nth-child(4){width:10%}.fc-purchase-lines.owner th:nth-child(5){width:11%}.fc-purchase-lines.owner th:nth-child(6){width:32%}.fc-purchase-lines.owner th:nth-child(7){width:8%}
+.fc-purchase-lines td{min-width:0;overflow-wrap:anywhere}
+.fc-purchase-lines td:first-child{display:grid;gap:5px}
+.fc-purchase-lines td[data-label="采购单价"],.fc-purchase-lines td[data-label="行金额试算"]{white-space:nowrap}
+@media(max-width:900px){
+  .fc-purchase-workbench{grid-template-columns:minmax(190px,230px) minmax(0,1fr);gap:10px;padding:12px}
+  .fc-purchase-meta{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+}
+@media(max-width:760px){
+  .fc-purchase-workbench{grid-template-columns:minmax(0,1fr)}
+  .fc-purchase-lines-wrap{overflow:visible}
+  .fc-purchase-lines,.fc-purchase-lines tbody,.fc-purchase-lines tr,.fc-purchase-lines td{display:block;width:100%}
+  .fc-purchase-lines{min-width:0;border:0}
+  .fc-purchase-lines thead{display:none}
+  .fc-purchase-lines tbody{display:grid;gap:10px}
+  .fc-purchase-lines tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px;border:1px solid #e2eae4;border-radius:10px;background:#fff}
+  .fc-purchase-lines td{display:grid;grid-template-columns:1fr;gap:5px;padding:3px;border:0;min-width:0}
+  .fc-purchase-lines td::before{content:attr(data-label);color:#718076;font-size:11px;font-weight:700}
+  .fc-purchase-lines td:first-child,.fc-purchase-lines td[data-label="品牌 / 型号 / 备注"]{grid-column:1/-1}
+  .fc-purchase-lines td:last-child{align-self:end;justify-items:end}
+  .fc-purchase-lines td:last-child::before{content:""}
+}

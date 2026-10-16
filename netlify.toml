@@ -1,0 +1,14 @@
+[build]
+publish = "share-preview-site/dist"
+
+[[headers]]
+for = "/*"
+  [headers.values]
+  X-Content-Type-Options = "nosniff"
+  Referrer-Policy = "strict-origin-when-cross-origin"
+  X-Frame-Options = "DENY"
+
+[[headers]]
+for = "/index.html"
+  [headers.values]
+  Cache-Control = "no-cache"
