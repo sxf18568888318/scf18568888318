@@ -27,7 +27,7 @@
     document.body.insertAdjacentHTML('afterbegin', `
       <div id="authGate" class="auth-gate" role="dialog" aria-modal="true" aria-labelledby="authGateTitle">
         <div class="auth-card">
-          <div class="auth-brand"><img class="brand-icon" src="assets/brand/yijiang-icon-512.png?v=20261017030204" alt="艺匠全屋定制"><div><strong>艺匠全屋定制</strong><small>整装 · 定制 · 工厂</small></div></div>
+          <div class="auth-brand"><img class="brand-icon" src="assets/brand/yijiang-icon-512.png?v=__ASSET_VERSION__" alt="艺匠全屋定制"><div><strong>艺匠全屋定制</strong><small>整装 · 定制 · 工厂</small></div></div>
           <div class="auth-kicker">员工登录</div>
           <h1 id="authGateTitle">登录工作台</h1>
           <p class="auth-help">使用公司分配的账号密码登录，系统会按角色显示可用模块。</p>
@@ -104,7 +104,7 @@
     if (!token) throw new Error('登录状态已失效，请重新登录。');
     const response = await fetch(`${SUPABASE_URL}/functions/v1/account-admin`, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }, body: JSON.stringify({ action, payload }) });
     const result = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(result.error === 'forbidden' ? '只有老板可以管理账号。' : '账号操作失败，请检查输入或稍后重试。');
+    if (!response.ok) throw new Error(result.error || `服务返回 ${response.status}，请重新登录后重试。`);
     return result;
   };
   window.anjuAuth.openAccountAdmin = () => {

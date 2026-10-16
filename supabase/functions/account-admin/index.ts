@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { isOwnerCaller } from './authz.mjs';
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 const roles = new Set(['owner', 'designer', 'foreman', 'factory_manager']);
@@ -13,7 +14,14 @@ Deno.serve(async (req: Request) => {
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
   const callerClient = createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: authorization } }, auth: { persistSession: false } });
   const { data: callerData, error: callerError } = await callerClient.auth.getUser();
-  if (callerError || !callerData.user || callerData.user.app_metadata?.role !== 'owner') return json({ error: 'forbidden' }, 403);
+  if (callerError || !callerData.user) return json({ error: 'invalid_session' }, 401);
+  const callerId = callerData.user.id;
+  const isOwner = await isOwnerCaller(callerId, async (id) => {
+    const { data, error } = await admin.from('profiles').select('role').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data?.role;
+  });
+  if (!isOwner) return json({ error: 'owner_required' }, 403);
   try {
     const { action, payload = {} } = await req.json();
     const fail = (message: string, status = 400) => json({ error: message }, status);
@@ -53,7 +61,7 @@ Deno.serve(async (req: Request) => {
       const loginName = String(payload.login_name || '').trim().toLowerCase();
       if (!id || !validLogin(loginName)) return fail('invalid_login_name');
       const { profile } = await findProfile(id);
-      const { error } = await admin.from('auth_login_aliases').upsert({ user_id: id, login_name: loginName, created_by: callerData.user.id }, { onConflict: 'user_id' });
+      const { error } = await admin.from('auth_login_aliases').upsert({ user_id: id, login_name: loginName, created_by: callerId }, { onConflict: 'user_id' });
       if (error) throw error;
       return json({ account: { id, display_name: profile.display_name, role: profile.role, login_name: loginName, mapped: true } });
     }
@@ -69,7 +77,7 @@ Deno.serve(async (req: Request) => {
       if (error || !data.user) throw error || new Error('account_create_failed');
       const { error: profileError } = await admin.from('profiles').upsert({ id: data.user.id, display_name: displayName, role });
       if (profileError) { await admin.auth.admin.deleteUser(data.user.id); throw profileError; }
-      const { error: aliasError } = await admin.from('auth_login_aliases').insert({ user_id: data.user.id, login_name: loginName, created_by: callerData.user.id });
+      const { error: aliasError } = await admin.from('auth_login_aliases').insert({ user_id: data.user.id, login_name: loginName, created_by: callerId });
       if (aliasError) { await admin.auth.admin.deleteUser(data.user.id); throw aliasError; }
       return json({ account: { id: data.user.id, display_name: displayName, role, login_name: loginName, mapped: true } }, 201);
     }

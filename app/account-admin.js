@@ -2,6 +2,15 @@
   'use strict';
   const roleNames = { owner: '老板', designer: '设计师', foreman: '工长', factory_manager: '厂长' };
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+  const errorText = (error, fallback) => ({
+    invalid_session: '登录状态已失效，请退出后重新登录。',
+    owner_required: '当前账号没有老板权限，请用老板账号登录后再操作。',
+    invalid_login_name: '登录名格式应为 yj18568888318-01。',
+    account_not_found: '找不到对应的用户档案，请刷新账号列表后重试。',
+    last_owner: '系统必须保留至少一个老板账号。',
+    invalid_role: '角色无效，请重新选择。',
+    account_operation_failed: '账号操作未完成，请刷新后重试。'
+  })[error?.message] || (error?.message?.startsWith('服务返回 ') ? error.message : fallback);
   const nextLogin = accounts => {
     const max = accounts.reduce((n, a) => Math.max(n, Number(a.login_name?.match(/-(\d+)$/)?.[1] || 0)), 0) + 1;
     return `yj18568888318-${String(max).padStart(2, '0')}`;
@@ -27,11 +36,11 @@
           showError(''); const login_name = row.querySelector('.account-login').value.trim();
           if (!/^yj18568888318-\d{2,}$/.test(login_name)) return showError('登录名格式应为 yj18568888318-01。');
           try { await window.anjuAuth.manageAccounts(accounts.find(a => a.id === id)?.mapped ? 'rename' : 'assign', { user_id: id, login_name }); await refresh(); }
-          catch { showError('保存登录名失败，请确认账号编号未被占用。'); }
+          catch (error) { showError(errorText(error, '保存登录名失败，请确认账号编号未被占用。')); }
         });
         row.querySelector('.account-role').addEventListener('change', async event => {
           showError(''); try { await window.anjuAuth.manageAccounts('set_role', { user_id: id, role: event.target.value }); }
-          catch { showError('角色调整失败；系统会保护最后一个老板账号。'); await refresh(); }
+          catch (error) { showError(errorText(error, '角色调整失败；系统会保护最后一个老板账号。')); await refresh(); }
         });
         row.querySelector('.account-reset').addEventListener('click', async () => {
           const account = accounts.find(a => a.id === id);
@@ -40,7 +49,7 @@
           if (password.length < 10) return showError('新密码至少需要 10 位。');
           if (!confirm(`确认重置「${account.display_name}」的密码？`)) return;
           try { await window.anjuAuth.manageAccounts('reset_password', { user_ids: [id], password }); showError('密码已重置；列表不会保存或显示密码。'); }
-          catch { showError('密码重置失败。'); }
+          catch (error) { showError(errorText(error, '密码重置失败。')); }
         });
       });
     }
@@ -49,7 +58,7 @@
       const values = Object.fromEntries(new FormData(event.currentTarget));
       if (values.password.length < 10) return showError('密码至少需要 10 位。');
       try { await window.anjuAuth.manageAccounts('create', values); event.currentTarget.reset(); await refresh(); }
-      catch { showError('开通失败，请核对登录名是否重复及资料是否完整。'); }
+      catch (error) { showError(errorText(error, '开通失败，请核对登录名是否重复及资料是否完整。')); }
     });
     document.getElementById('accountBulkReset').addEventListener('click', async () => {
       const ids = [...document.querySelectorAll('.account-admin-row')].filter(row => row.querySelector('.account-select').checked).map(row => row.dataset.id);
@@ -60,9 +69,9 @@
       const names = ids.map(id => accounts.find(a => a.id === id)?.display_name || '员工').join('、');
       if (!confirm(`确认重置以下账号密码？\n${names}`)) return;
       try { await window.anjuAuth.manageAccounts('reset_password', { user_ids: ids, password }); showError(`已更新 ${ids.length} 个账号的密码。`); }
-      catch { showError('批量重置失败。'); }
+      catch (error) { showError(errorText(error, '批量重置失败。')); }
     });
-    try { await refresh(); } catch { showError('账号列表读取失败；请确认该登录账号为老板角色。'); }
+    try { await refresh(); } catch (error) { showError(errorText(error, '账号列表读取失败；请确认该登录账号为老板角色。')); }
   }
   window.addEventListener('anju:open-account-admin', open);
 })();

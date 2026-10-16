@@ -104,7 +104,7 @@
     if (!token) throw new Error('登录状态已失效，请重新登录。');
     const response = await fetch(`${SUPABASE_URL}/functions/v1/account-admin`, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }, body: JSON.stringify({ action, payload }) });
     const result = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(result.error === 'forbidden' ? '只有老板可以管理账号。' : '账号操作失败，请检查输入或稍后重试。');
+    if (!response.ok) throw new Error(result.error || `服务返回 ${response.status}，请重新登录后重试。`);
     return result;
   };
   window.anjuAuth.openAccountAdmin = () => {
