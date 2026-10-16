@@ -120,6 +120,8 @@ body.auth-required #modalRoot { display: none !important; }
 .auth-user-menu .auth-profile:hover { border-color: #163f34; background: #f3f8f5; }
 .auth-side-setting { margin-top: 8px; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); color: inherit; border-radius: 7px; padding: 5px 10px; cursor: pointer; font-size: 12px; }
 .auth-side-setting:hover { background: rgba(255,255,255,.16); }
+.auth-side-actions { flex: 0 0 100%; display: flex; gap: 6px; min-width: 0; }
+.auth-side-actions .auth-side-setting { flex: 1 1 0; min-width: 0; margin-top: 0; padding: 5px 6px; white-space: nowrap; }
 .auth-profile-overlay {
   position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center;
   padding: 20px; overflow-y: auto; background: rgba(15, 35, 30, .52); backdrop-filter: blur(2px);

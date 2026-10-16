@@ -89,7 +89,7 @@
     const sideFoot = document.querySelector('.side-foot');
     if (sideFoot) {
       sideFoot.classList.remove('auth-hidden');
-      sideFoot.innerHTML = `<span class="pulse"></span><span><b>云端正式版</b><small>真实数据 · 角色隔离</small></span><button type="button" id="authProfile" class="auth-side-setting">设置</button>${role === 'owner' ? '<button type="button" id="authAccountAdmin" class="auth-side-setting">管理账号</button>' : ''}`;
+      sideFoot.innerHTML = `<span class="pulse"></span><span><b>云端正式版</b><small>真实数据 · 角色隔离</small></span><div class="auth-side-actions"><button type="button" id="authProfile" class="auth-side-setting">设置</button>${role === 'owner' ? '<button type="button" id="authAccountAdmin" class="auth-side-setting">管理账号</button>' : ''}</div>`;
     }
     document.getElementById('authProfile')?.addEventListener('click', openProfile);
     document.getElementById('authAccountAdmin')?.addEventListener('click', () => window.anjuAuth.openAccountAdmin());
