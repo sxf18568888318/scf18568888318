@@ -27,12 +27,12 @@
     document.body.insertAdjacentHTML('afterbegin', `
       <div id="authGate" class="auth-gate" role="dialog" aria-modal="true" aria-labelledby="authGateTitle">
         <div class="auth-card">
-          <div class="auth-brand"><img class="brand-icon" src="assets/brand/yijiang-icon-512.png?v=20261017014356" alt="艺匠全屋定制"><div><strong>艺匠全屋定制</strong><small>整装 · 定制 · 工厂</small></div></div>
+          <div class="auth-brand"><img class="brand-icon" src="assets/brand/yijiang-icon-512.png?v=20261017023720" alt="艺匠全屋定制"><div><strong>艺匠全屋定制</strong><small>整装 · 定制 · 工厂</small></div></div>
           <div class="auth-kicker">员工登录</div>
           <h1 id="authGateTitle">登录工作台</h1>
           <p class="auth-help">使用公司分配的账号密码登录，系统会按角色显示可用模块。</p>
           <form id="authForm" novalidate>
-            <label class="auth-field"><span>账号</span><input name="email" type="email" autocomplete="username" placeholder="员工账号" required></label>
+            <label class="auth-field"><span>账号</span><input name="account" type="text" autocomplete="username" placeholder="邮箱或 yj18568888318-01" required></label>
             <label class="auth-field"><span>密码</span><input name="password" type="password" autocomplete="current-password" placeholder="登录密码" required></label>
             <div id="authError" class="auth-error" role="alert">${message}</div>
             <button class="auth-submit" type="submit">登录</button>
@@ -49,17 +49,30 @@
       submit.disabled = true;
       submit.textContent = '登录中…';
       const data = new FormData(form);
-      const { data: result, error: signInError } = await client.auth.signInWithPassword({
-        email: String(data.get('email') || '').trim(),
-        password: String(data.get('password') || '')
-      });
-      if (signInError || !result.user) {
-        error.textContent = signInError?.message || '账号或密码不正确';
+      const account = String(data.get('account') || '').trim();
+      const password = String(data.get('password') || '');
+      let user = null;
+      let signInError = null;
+      if (account.includes('@')) {
+        const result = await client.auth.signInWithPassword({ email: account, password });
+        user = result.data?.user; signInError = result.error;
+      } else {
+        try {
+          const result = await fetch(`${SUPABASE_URL}/functions/v1/login-by-account`, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY }, body: JSON.stringify({ account, password }) });
+          const session = await result.json().catch(() => ({}));
+          if (result.ok && session.access_token && session.refresh_token) {
+            const saved = await client.auth.setSession({ access_token: session.access_token, refresh_token: session.refresh_token });
+            user = saved.data?.user; signInError = saved.error;
+          } else signInError = new Error('账号或密码不正确');
+        } catch { signInError = new Error('账号或密码不正确'); }
+      }
+      if (signInError || !user) {
+        error.textContent = '账号或密码不正确';
         submit.disabled = false;
         submit.textContent = '登录';
         return;
       }
-      await completeLogin(result.user);
+      await completeLogin(user);
     });
   }
 
@@ -67,8 +80,7 @@
     const actions = document.querySelector('.top-actions');
     if (!actions || document.getElementById('authUserMenu')) return;
     const email = user.email || '';
-    actions.insertAdjacentHTML('beforeend', `<div id="authUserMenu" class="auth-user-menu"><span class="auth-role">${roleNames[role] || '员工'}</span><span class="auth-email">${email}</span><button type="button" id="authProfile" class="auth-profile">个人中心</button><button type="button" id="authLogout" class="auth-logout">退出</button></div>`);
-    document.getElementById('authProfile')?.addEventListener('click', openProfile);
+    actions.insertAdjacentHTML('beforeend', `<div id="authUserMenu" class="auth-user-menu"><span class="auth-role">${roleNames[role] || '员工'}</span><span class="auth-email">${email}</span><button type="button" id="authLogout" class="auth-logout">退出</button></div>`);
     document.getElementById('authLogout')?.addEventListener('click', async () => {
       const { error } = await client.auth.signOut();
       if (!error) location.reload();
@@ -77,12 +89,27 @@
     const sideFoot = document.querySelector('.side-foot');
     if (sideFoot) {
       sideFoot.classList.remove('auth-hidden');
-      sideFoot.innerHTML = '<span class="pulse"></span><span><b>云端正式版</b><small>真实数据 · 角色隔离</small></span>';
+      sideFoot.innerHTML = `<span class="pulse"></span><span><b>云端正式版</b><small>真实数据 · 角色隔离</small></span><button type="button" id="authProfile" class="auth-side-setting">设置</button>${role === 'owner' ? '<button type="button" id="authAccountAdmin" class="auth-side-setting">管理账号</button>' : ''}`;
     }
+    document.getElementById('authProfile')?.addEventListener('click', openProfile);
+    document.getElementById('authAccountAdmin')?.addEventListener('click', () => window.anjuAuth.openAccountAdmin());
     document.querySelector('.demo-strip')?.classList.add('auth-cloud-strip');
     const strip = document.querySelector('.demo-strip');
     if (strip) strip.innerHTML = '<span>●</span> 云端权限版：当前登录身份由服务器分配，数据权限按角色隔离。';
   }
+
+  window.anjuAuth.manageAccounts = async (action, payload = {}) => {
+    const { data } = await client.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) throw new Error('登录状态已失效，请重新登录。');
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/account-admin`, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }, body: JSON.stringify({ action, payload }) });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error === 'forbidden' ? '只有老板可以管理账号。' : '账号操作失败，请检查输入或稍后重试。');
+    return result;
+  };
+  window.anjuAuth.openAccountAdmin = () => {
+    if (window.__ANJU_AUTH__?.role === 'owner') window.dispatchEvent(new CustomEvent('anju:open-account-admin'));
+  };
 
   function closeProfile() {
     document.getElementById('authProfileDialog')?.remove();
@@ -91,14 +118,13 @@
   function openProfile() {
     if (!window.__ANJU_AUTH__?.user) return;
     closeProfile();
-    const profileEmail = String(window.__ANJU_AUTH__.user.email || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
     document.body.insertAdjacentHTML('beforeend', `
       <div id="authProfileDialog" class="auth-profile-overlay" role="dialog" aria-modal="true" aria-labelledby="authProfileTitle">
         <section class="auth-profile-card">
           <button type="button" class="auth-profile-close" aria-label="关闭">×</button>
           <div class="auth-kicker">个人中心</div>
           <h2 id="authProfileTitle">修改密码</h2>
-          <p class="auth-help">${profileEmail}<br>修改后请使用新密码登录。新密码至少 10 位。</p>
+          <p class="auth-help">修改后请使用新密码登录。新密码至少 10 位。</p>
           <form id="authPasswordForm" novalidate>
             <label class="auth-field"><span>当前密码</span><input name="currentPassword" type="password" autocomplete="current-password" required></label>
             <label class="auth-field"><span>新密码</span><input name="newPassword" type="password" autocomplete="new-password" minlength="10" required></label>

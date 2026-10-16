@@ -53,11 +53,13 @@ $taskCss += "`r`n" + (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'auth-ga
 $taskCss += "`r`n" + (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'factory-cloud.css') -Raw -Encoding UTF8)
 $taskCss += "`r`n" + (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'mobile-experience.css') -Raw -Encoding UTF8)
 $taskCss += "`r`n" + (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'acceptance-repair.css') -Raw -Encoding UTF8)
+$taskCss += "`r`n" + (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'account-admin.css') -Raw -Encoding UTF8)
 [IO.File]::WriteAllText($taskCssPath, $taskCss, [Text.UTF8Encoding]::new($false))
 $taskDist = Join-Path $taskRoot 'share-preview-site\dist'
 Copy-Item -LiteralPath $taskJsPath -Destination (Join-Path $taskDist 'framework-preview.js')
 Copy-Item -LiteralPath $taskCssPath -Destination (Join-Path $taskDist 'framework-preview.css')
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'auth-gate.js') -Destination (Join-Path $taskDist 'auth-gate.js')
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'account-admin.js') -Destination (Join-Path $taskDist 'account-admin.js')
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'vendor') -Destination $taskDist -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot '..\supabase\seed\custom-catalog-demo.json') -Destination (Join-Path $taskDist 'custom-catalog-demo.json')
 $taskBrandDist = Join-Path $taskDist 'assets\brand'
@@ -73,6 +75,9 @@ $taskHtml = $taskHtml.Replace('__ASSET_VERSION__', $taskRevision)
 $taskAuthJsPath = Join-Path $taskDist 'auth-gate.js'
 $taskAuthJs = (Get-Content -LiteralPath $taskAuthJsPath -Raw -Encoding UTF8).Replace('__ASSET_VERSION__', $taskRevision)
 [IO.File]::WriteAllText($taskAuthJsPath, $taskAuthJs, [Text.UTF8Encoding]::new($false))
+$taskAccountJsPath = Join-Path $taskDist 'account-admin.js'
+$taskAccountJs = (Get-Content -LiteralPath $taskAccountJsPath -Raw -Encoding UTF8).Replace('__ASSET_VERSION__', $taskRevision)
+[IO.File]::WriteAllText($taskAccountJsPath, $taskAccountJs, [Text.UTF8Encoding]::new($false))
 $taskDistJsPath = Join-Path $taskDist 'framework-preview.js'
 $taskDistJs = (Get-Content -LiteralPath $taskDistJsPath -Raw -Encoding UTF8).Replace('__ASSET_VERSION__', $taskRevision)
 [IO.File]::WriteAllText($taskDistJsPath, $taskDistJs, [Text.UTF8Encoding]::new($false))
