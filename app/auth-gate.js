@@ -89,7 +89,7 @@
     const sideFoot = document.querySelector('.side-foot');
     if (sideFoot) {
       sideFoot.classList.remove('auth-hidden');
-      sideFoot.innerHTML = `<span class="pulse"></span><span><b>云端正式版</b><small>真实数据 · 角色隔离</small></span><div class="auth-side-actions"><button type="button" id="authProfile" class="auth-side-setting">设置</button>${role === 'owner' ? '<button type="button" id="authAccountAdmin" class="auth-side-setting">管理账号</button>' : ''}</div>`;
+      sideFoot.innerHTML = `<span class="pulse"></span><span class="auth-side-status"><b>云端正式版</b><small>真实数据 · 角色隔离</small></span><div class="auth-side-actions"><button type="button" id="authProfile" class="auth-side-setting" aria-label="设置个人资料与密码" title="设置"><span class="auth-side-icon" aria-hidden="true">⚙</span><span><b>设置</b><small>个人资料与密码</small></span></button>${role === 'owner' ? '<button type="button" id="authAccountAdmin" class="auth-side-setting" aria-label="管理员工账号与权限" title="管理账号"><span class="auth-side-icon" aria-hidden="true">♙</span><span><b>管理账号</b><small>员工账号与权限</small></span></button>' : ''}</div>`;
     }
     document.getElementById('authProfile')?.addEventListener('click', openProfile);
     document.getElementById('authAccountAdmin')?.addEventListener('click', () => window.anjuAuth.openAccountAdmin());

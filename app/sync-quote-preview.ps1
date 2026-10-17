@@ -61,7 +61,15 @@ Copy-Item -LiteralPath $taskCssPath -Destination (Join-Path $taskDist 'framework
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'auth-gate.js') -Destination (Join-Path $taskDist 'auth-gate.js')
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'account-admin.js') -Destination (Join-Path $taskDist 'account-admin.js')
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'vendor') -Destination $taskDist -Recurse -Force
-Copy-Item -LiteralPath (Join-Path $PSScriptRoot '..\supabase\seed\custom-catalog-demo.json') -Destination (Join-Path $taskDist 'custom-catalog-demo.json')
+$taskCatalogSource = Join-Path $PSScriptRoot '..\supabase\seed\custom-catalog-demo.json'
+$taskCatalogDestination = Join-Path $taskDist 'custom-catalog-demo.json'
+if (Test-Path -LiteralPath $taskCatalogSource) {
+  Copy-Item -LiteralPath $taskCatalogSource -Destination $taskCatalogDestination
+} elseif (-not (Test-Path -LiteralPath $taskCatalogDestination)) {
+  throw 'Custom catalog asset is missing from both source and publish directory.'
+} else {
+  Write-Host 'Using the versioned custom catalog asset already in the publish directory.'
+}
 $taskBrandDist = Join-Path $taskDist 'assets\brand'
 New-Item -ItemType Directory -Path $taskBrandDist -Force | Out-Null
 Copy-Item -Path (Join-Path $PSScriptRoot 'assets\brand\*') -Destination $taskBrandDist -Recurse -Force
@@ -82,5 +90,3 @@ $taskDistJsPath = Join-Path $taskDist 'framework-preview.js'
 $taskDistJs = (Get-Content -LiteralPath $taskDistJsPath -Raw -Encoding UTF8).Replace('__ASSET_VERSION__', $taskRevision)
 [IO.File]::WriteAllText($taskDistJsPath, $taskDistJs, [Text.UTF8Encoding]::new($false))
 Write-Output 'Local quotation preview synchronized. Refresh localhost to see edits.'
-
-

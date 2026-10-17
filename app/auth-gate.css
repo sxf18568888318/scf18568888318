@@ -158,3 +158,16 @@ body.auth-required #modalRoot { display: none !important; }
 .brand-doc-heading{display:flex;align-items:center;gap:10px;margin-bottom:8px}
 .brand-doc-heading img{width:190px;max-width:48vw;height:auto;max-height:56px;object-fit:contain}
 @media(max-width:760px){.mobile-brand .brand-icon{width:30px;height:30px}}
+
+
+/* Sidebar settings and account administration use clear stacked buttons. */
+.side-foot{align-items:stretch;flex-wrap:wrap}
+.auth-side-status{min-width:0;flex:1}
+.auth-side-actions{flex:0 0 100%;display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0;margin-top:10px}
+.auth-side-actions .auth-side-setting{display:flex;align-items:center;gap:10px;width:100%;min-width:0;min-height:46px;margin:0;padding:8px 10px;border-color:#ffffff36;background:#ffffff0e;text-align:left;white-space:normal}
+.auth-side-actions .auth-side-setting:hover{background:#ffffff1c;border-color:#ffffff70}
+.auth-side-actions .auth-side-setting>span:last-child{display:grid;gap:3px;min-width:0}
+.auth-side-actions .auth-side-setting b{font-size:13px;line-height:1.25}
+.auth-side-actions .auth-side-setting small{color:#a7c3b5;font-size:10px;line-height:1.3}
+.auth-side-icon{display:grid;flex:0 0 28px;width:28px;height:28px;place-items:center;border-radius:8px;background:#ffffff18;color:#d7eee1;font-size:16px}
+@media(max-width:760px){.side-foot{justify-content:center;padding:10px 5px}.sidebar .side-foot .auth-side-status{display:none!important}.auth-side-actions{gap:6px;margin-top:0}.sidebar .side-foot .auth-side-actions .auth-side-setting{justify-content:center;width:44px;height:44px;min-height:44px;margin:auto;padding:0}.sidebar .side-foot .auth-side-actions .auth-side-setting>span:last-child{display:none!important}}

@@ -79,3 +79,44 @@
 .fc-repeat-row .field{min-width:0}
 @media(max-width:860px){.fc-repeat-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.modal.fc-config-modal{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0}.fc-config-modal form{height:100dvh;max-height:100dvh}.fc-config-modal .form-grid{grid-template-columns:1fr}.fc-config-modal .form-field.full{grid-column:auto}.fc-repeat-row{grid-template-columns:1fr}.fc-repeat-row button{justify-self:start}}
+
+/* Purchase review uses labelled cards so every field stays visible without side-scrolling. */
+.fc-purchase-lines-wrap{overflow:visible}
+.fc-purchase-line-list{display:grid;gap:12px;margin:12px 0}
+.fc-purchase-line-card{display:grid;grid-template-columns:minmax(180px,2fr) repeat(4,minmax(105px,1fr)) minmax(120px,1.25fr) auto;align-items:end;gap:10px;padding:14px;border:1px solid #dfe8e2;border-radius:13px;background:linear-gradient(135deg,#fff,#f8fbf9);box-shadow:0 3px 12px #183b2d08}
+.fc-purchase-line-card label{display:grid;gap:5px;min-width:0;margin:0;color:#53665b;font-size:12px;font-weight:600}
+.fc-purchase-line-card .field{width:100%;min-width:0;margin:0}
+.fc-purchase-line-total{display:grid;gap:5px;min-width:0;padding:8px 10px;border-radius:9px;background:#edf5ef;color:#64766c;font-size:11px}
+.fc-purchase-line-total output{color:#174d3c;font-size:15px;font-weight:750;white-space:nowrap}
+.fc-purchase-line-remark{grid-column:1/-2}
+.fc-purchase-line-remove{justify-self:end}
+.fc-purchase-line-card:focus-within{border-color:#8bbba1;box-shadow:0 0 0 3px #2e7d6312}
+@media(max-width:1100px){.fc-purchase-line-card{grid-template-columns:repeat(3,minmax(0,1fr))}.fc-purchase-line-remark{grid-column:1/-2}}
+@media(max-width:760px){.fc-purchase-line-card{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:11px}.fc-purchase-line-card>label:first-child,.fc-purchase-line-remark{grid-column:1/-1}.fc-purchase-line-remove{grid-column:2;grid-row:auto}.fc-purchase-line-total{min-height:40px;align-content:center}.fc-purchase-footer .btn{flex:1 1 100%}}
+@media(max-width:390px){.fc-purchase-meta{grid-template-columns:1fr}.fc-purchase-line-card{grid-template-columns:1fr}.fc-purchase-line-card>label:first-child,.fc-purchase-line-remark,.fc-purchase-line-remove{grid-column:1}.fc-purchase-line-remove{justify-self:start}}
+
+/* Cash settlement is visually distinct from cost accrual and outstanding receivables. */
+.fc-cash-metrics{margin:14px 0 18px}
+.fc-cash-metrics .metric{border:1px solid #dce8e0;box-shadow:0 5px 16px #143f2d0b}
+.fc-cash-metrics .metric-value{font-size:clamp(22px,2vw,30px);font-weight:800;color:#174d3c}
+.fc-cash-actions{display:flex;justify-content:flex-end;margin:10px 0}
+.fc-cash-kind{display:inline-flex;min-width:56px;justify-content:center;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700}
+.fc-cash-kind.received{background:#e8f5ec;color:#19643e}
+.fc-cash-kind.paid{background:#fff1e7;color:#96531e}
+.fc-cash-amount{color:#173f31;font-size:15px;white-space:nowrap}
+.fc-receivable-due td{background:#fff8f6}
+.fc-due-alert{display:inline-block;padding:5px 9px;border-radius:8px;background:#ffebe8;color:#aa3028;font-size:13px;white-space:nowrap}
+.fc-receivable-amount{color:#8b5a16}
+.fc-paid-badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eaf5ed;color:#286447;font-size:12px;font-weight:650}
+.fc-proof-upload small{display:block;margin-top:5px;color:#708076;font-size:11px}
+.fc-proof-link{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fc-payroll-total{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:16px 0;padding:18px 20px;border:1px solid #cfe2d5;border-radius:14px;background:linear-gradient(110deg,#eff8f1,#f9fcf9)}
+.fc-payroll-total>span{display:grid;gap:5px;color:#355d48;font-weight:700}
+.fc-payroll-total small{color:#6e8074;font-size:12px;font-weight:400}
+.fc-payroll-total>b{color:#174d3c;font-size:25px}
+.fc-payroll-extra-row td{background:#fbfcf4;color:#596a31}
+.fc-bulk-inventory-row{grid-template-columns:minmax(180px,1.5fr) minmax(150px,1.1fr) repeat(2,minmax(115px,1fr)) minmax(140px,1.2fr) auto auto}
+.fc-bulk-unmatched[hidden],.fc-bulk-create-material[hidden]{display:none!important}
+.fc-bulk-unmatched{grid-column:span 1}
+@media(max-width:1000px){.fc-bulk-inventory-row{grid-template-columns:repeat(3,minmax(0,1fr))}.fc-bulk-inventory-row label:first-child{grid-column:span 2}.fc-bulk-unmatched{grid-column:span 2}}
+@media(max-width:620px){.fc-bulk-inventory-row{grid-template-columns:repeat(2,minmax(0,1fr))}.fc-bulk-inventory-row label:first-child,.fc-bulk-unmatched,.fc-bulk-inventory-row label:nth-of-type(4){grid-column:1/-1}.fc-bulk-inventory-row>.btn{width:100%}.fc-payroll-total{align-items:flex-start;flex-direction:column}.fc-payroll-total>b{font-size:23px}}

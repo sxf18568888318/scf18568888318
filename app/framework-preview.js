@@ -4178,6 +4178,630 @@ window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
   };
 };
 
+/* Small shared debounce/flush helper for cloud-backed quotation drafts. */
+window.__YJCloudDraftQueue = function createYJCloudDraftQueue({delay=900, save, onState=()=>{}}={}) {
+  if (typeof save !== 'function') throw new TypeError('Cloud draft save callback is required');
+  let timer = null;
+  let pending = null;
+  let sequence = 0;
+  let dirty = false;
+  let chain = Promise.resolve();
+
+  function schedule(payload) {
+    pending = payload;
+    dirty = true;
+    sequence += 1;
+    if (timer) clearTimeout(timer);
+    onState('pending');
+    timer = setTimeout(() => { flush().catch(() => {}); }, delay);
+  }
+
+  function flush() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (pending === null) return chain;
+    const payload = pending;
+    pending = null;
+    const version = sequence;
+    onState('saving');
+    const attempt = chain.catch(() => {}).then(() => save(payload));
+    chain = attempt.then(result => {
+      if (version === sequence) {
+        dirty = false;
+        onState('saved', result);
+      }
+      return result;
+    }, error => {
+      if (version === sequence) {
+        if (pending === null) pending = payload;
+        dirty = true;
+        onState('failed', error);
+      }
+      throw error;
+    });
+    return chain;
+  }
+
+  async function wait() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (pending !== null) await flush();
+    else await chain;
+    return !dirty;
+  }
+
+  function cancel() {
+    if (timer) { clearTimeout(timer); timer = null; }
+  }
+
+  return { schedule, flush, wait, cancel, get dirty() { return dirty; } };
+};
+window.__YJQuoteQuantity = function calculateQuoteQuantity(mode, quantity, widthMm, heightMm, lengthM) {
+  const q = Number(quantity || 0), width = Number(widthMm || 0), height = Number(heightMm || 0);
+  if (mode === '投影' || mode === '平方') return Math.round(width * height / 1000000 * 10000) / 10000;
+  if (mode === '延米') return Math.round((Number(lengthM || 0) || width / 1000) * 10000) / 10000;
+  return q;
+};
+window.__YJQuotePricingMode = function quotePricingMode(unit) {
+  const value = String(unit || '项');
+  if (value === '投影') return '投影';
+  if (['平方','m²','㎡'].includes(value)) return '平方';
+  if (['延米','m'].includes(value)) return '延米';
+  return '按单位';
+};
+window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
+  const copy = value => value == null ? value : JSON.parse(JSON.stringify(value));
+  const material = value => {
+    const source = value || {};
+    return Object.fromEntries(['brand','substrate','thickness','color','door','finish','grade','model','spec'].filter(key => source[key] != null).map(key => [key, String(source[key])]));
+  };
+  return {
+    type: '全屋定制', customerId: String(q.customerId || ''), customer: String(q.customer || ''),
+    address: String(q.address || ''), contact: String(q.contact || ''), phone: String(q.phone || ''),
+    owner: String(q.owner || ''), date: String(q.date || ''), validity: String(q.validity || ''),
+    requirements: String(q.requirements || ''), exclusions: String(q.exclusions || ''),
+    customerType: String(q.customerType || ''), channel: String(q.channel || ''),
+    payments: String(q.payments || ''), channelTerms: String(q.channelTerms || ''),
+    discount: Number(q.discount || 0), deliveryFee: Number(q.deliveryFee || 0), installFee: Number(q.installFee || 0),
+    projectedPrice: Number(q.projectedPrice || 0), linearPrice: Number(q.linearPrice || 0),
+    factoryOrderNo: String(q.factoryOrderNo || ''), measurementDate: String(q.measurementDate || ''),
+    deliveryDate: String(q.deliveryDate || ''), clientProjectedArea: Number(q.clientProjectedArea || 0),
+    clientDoorArea: Number(q.clientDoorArea || 0), orderNote: String(q.orderNote || ''),
+    rooms: Array.isArray(q.rooms) ? q.rooms.map(String) : [], activeRoom: String(q.activeRoom || ''),
+    baseMaterial: material(q.baseMaterial), doorMaterial: material(q.doorMaterial),
+    rows: Array.isArray(q.rows) ? q.rows.map(row => ({
+      name: String(row.name || ''), category: String(row.category || ''), mode: String(row.mode || ''),
+      unit: String(row.unit || ''), qty: Number(row.qty || 0), quantity: Number(row.quantity || row.qty || 0),
+      width: Number(row.width || 0), height: Number(row.height || 0), depth: Number(row.depth || 0), deduct: Number(row.deduct || 0),
+      price: Number(row.price || 0), amount: Number(row.amount || 0), room: String(row.room || ''),
+      spec: String(row.spec || ''), remark: String(row.remark || ''), note: String(row.note || ''),
+      included: Boolean(row.included), charge: String(row.charge || ''), includedIn: String(row.includedIn || ''),
+      expandedArea: Number(row.expandedArea || 0), directArea: Number(row.directArea || 0), measureVersion: Number(row.measureVersion || 0), measureSource: String(row.measureSource || ''), material: material(row.material),
+      standalonePrice: Number(row.standalonePrice || 0), upgradePrice: Number(row.upgradePrice || 0)
+    })) : [],
+    documents: Array.isArray(q.documents) ? copy(q.documents) : [],
+    subtotal: Number(q.subtotal || 0), amount: Number(q.amount || 0), savedAt: new Date().toISOString()
+  };
+};
+
+/* Small shared debounce/flush helper for cloud-backed quotation drafts. */
+window.__YJCloudDraftQueue = function createYJCloudDraftQueue({delay=900, save, onState=()=>{}}={}) {
+  if (typeof save !== 'function') throw new TypeError('Cloud draft save callback is required');
+  let timer = null;
+  let pending = null;
+  let sequence = 0;
+  let dirty = false;
+  let chain = Promise.resolve();
+
+  function schedule(payload) {
+    pending = payload;
+    dirty = true;
+    sequence += 1;
+    if (timer) clearTimeout(timer);
+    onState('pending');
+    timer = setTimeout(() => { flush().catch(() => {}); }, delay);
+  }
+
+  function flush() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (pending === null) return chain;
+    const payload = pending;
+    pending = null;
+    const version = sequence;
+    onState('saving');
+    const attempt = chain.catch(() => {}).then(() => save(payload));
+    chain = attempt.then(result => {
+      if (version === sequence) {
+        dirty = false;
+        onState('saved', result);
+      }
+      return result;
+    }, error => {
+      if (version === sequence) {
+        if (pending === null) pending = payload;
+        dirty = true;
+        onState('failed', error);
+      }
+      throw error;
+    });
+    return chain;
+  }
+
+  async function wait() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (pending !== null) await flush();
+    else await chain;
+    return !dirty;
+  }
+
+  function cancel() {
+    if (timer) { clearTimeout(timer); timer = null; }
+  }
+
+  return { schedule, flush, wait, cancel, get dirty() { return dirty; } };
+};
+window.__YJQuoteQuantity = function calculateQuoteQuantity(mode, quantity, widthMm, heightMm, lengthM) {
+  const q = Number(quantity || 0), width = Number(widthMm || 0), height = Number(heightMm || 0);
+  if (mode === '投影' || mode === '平方') return Math.round(width * height / 1000000 * 10000) / 10000;
+  if (mode === '延米') return Math.round((Number(lengthM || 0) || width / 1000) * 10000) / 10000;
+  return q;
+};
+window.__YJQuotePricingMode = function quotePricingMode(unit) {
+  const value = String(unit || '项');
+  if (value === '投影') return '投影';
+  if (['平方','m²','㎡'].includes(value)) return '平方';
+  if (['延米','m'].includes(value)) return '延米';
+  return '按单位';
+};
+window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
+  const copy = value => value == null ? value : JSON.parse(JSON.stringify(value));
+  const material = value => {
+    const source = value || {};
+    return Object.fromEntries(['brand','substrate','thickness','color','door','finish','grade','model','spec'].filter(key => source[key] != null).map(key => [key, String(source[key])]));
+  };
+  return {
+    type: '全屋定制', customerId: String(q.customerId || ''), customer: String(q.customer || ''),
+    address: String(q.address || ''), contact: String(q.contact || ''), phone: String(q.phone || ''),
+    owner: String(q.owner || ''), date: String(q.date || ''), validity: String(q.validity || ''),
+    requirements: String(q.requirements || ''), exclusions: String(q.exclusions || ''),
+    customerType: String(q.customerType || ''), channel: String(q.channel || ''),
+    payments: String(q.payments || ''), channelTerms: String(q.channelTerms || ''),
+    discount: Number(q.discount || 0), deliveryFee: Number(q.deliveryFee || 0), installFee: Number(q.installFee || 0),
+    projectedPrice: Number(q.projectedPrice || 0), linearPrice: Number(q.linearPrice || 0),
+    factoryOrderNo: String(q.factoryOrderNo || ''), measurementDate: String(q.measurementDate || ''),
+    deliveryDate: String(q.deliveryDate || ''), clientProjectedArea: Number(q.clientProjectedArea || 0),
+    clientDoorArea: Number(q.clientDoorArea || 0), orderNote: String(q.orderNote || ''),
+    rooms: Array.isArray(q.rooms) ? q.rooms.map(String) : [], activeRoom: String(q.activeRoom || ''),
+    baseMaterial: material(q.baseMaterial), doorMaterial: material(q.doorMaterial),
+    rows: Array.isArray(q.rows) ? q.rows.map(row => ({
+      name: String(row.name || ''), category: String(row.category || ''), mode: String(row.mode || ''),
+      unit: String(row.unit || ''), qty: Number(row.qty || 0), quantity: Number(row.quantity || row.qty || 0),
+      width: Number(row.width || 0), height: Number(row.height || 0), depth: Number(row.depth || 0), deduct: Number(row.deduct || 0),
+      price: Number(row.price || 0), amount: Number(row.amount || 0), room: String(row.room || ''),
+      spec: String(row.spec || ''), remark: String(row.remark || ''), note: String(row.note || ''),
+      included: Boolean(row.included), charge: String(row.charge || ''), includedIn: String(row.includedIn || ''),
+      expandedArea: Number(row.expandedArea || 0), directArea: Number(row.directArea || 0), measureVersion: Number(row.measureVersion || 0), measureSource: String(row.measureSource || ''), material: material(row.material),
+      standalonePrice: Number(row.standalonePrice || 0), upgradePrice: Number(row.upgradePrice || 0)
+    })) : [],
+    documents: Array.isArray(q.documents) ? copy(q.documents) : [],
+    subtotal: Number(q.subtotal || 0), amount: Number(q.amount || 0), savedAt: new Date().toISOString()
+  };
+};
+
+/* Small shared debounce/flush helper for cloud-backed quotation drafts. */
+window.__YJCloudDraftQueue = function createYJCloudDraftQueue({delay=900, save, onState=()=>{}}={}) {
+  if (typeof save !== 'function') throw new TypeError('Cloud draft save callback is required');
+  let timer = null;
+  let pending = null;
+  let sequence = 0;
+  let dirty = false;
+  let chain = Promise.resolve();
+
+  function schedule(payload) {
+    pending = payload;
+    dirty = true;
+    sequence += 1;
+    if (timer) clearTimeout(timer);
+    onState('pending');
+    timer = setTimeout(() => { flush().catch(() => {}); }, delay);
+  }
+
+  function flush() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (pending === null) return chain;
+    const payload = pending;
+    pending = null;
+    const version = sequence;
+    onState('saving');
+    const attempt = chain.catch(() => {}).then(() => save(payload));
+    chain = attempt.then(result => {
+      if (version === sequence) {
+        dirty = false;
+        onState('saved', result);
+      }
+      return result;
+    }, error => {
+      if (version === sequence) {
+        if (pending === null) pending = payload;
+        dirty = true;
+        onState('failed', error);
+      }
+      throw error;
+    });
+    return chain;
+  }
+
+  async function wait() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (pending !== null) await flush();
+    else await chain;
+    return !dirty;
+  }
+
+  function cancel() {
+    if (timer) { clearTimeout(timer); timer = null; }
+  }
+
+  return { schedule, flush, wait, cancel, get dirty() { return dirty; } };
+};
+window.__YJQuoteQuantity = function calculateQuoteQuantity(mode, quantity, widthMm, heightMm, lengthM) {
+  const q = Number(quantity || 0), width = Number(widthMm || 0), height = Number(heightMm || 0);
+  if (mode === '投影' || mode === '平方') return Math.round(width * height / 1000000 * 10000) / 10000;
+  if (mode === '延米') return Math.round((Number(lengthM || 0) || width / 1000) * 10000) / 10000;
+  return q;
+};
+window.__YJQuotePricingMode = function quotePricingMode(unit) {
+  const value = String(unit || '项');
+  if (value === '投影') return '投影';
+  if (['平方','m²','㎡'].includes(value)) return '平方';
+  if (['延米','m'].includes(value)) return '延米';
+  return '按单位';
+};
+window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
+  const copy = value => value == null ? value : JSON.parse(JSON.stringify(value));
+  const material = value => {
+    const source = value || {};
+    return Object.fromEntries(['brand','substrate','thickness','color','door','finish','grade','model','spec'].filter(key => source[key] != null).map(key => [key, String(source[key])]));
+  };
+  return {
+    type: '全屋定制', customerId: String(q.customerId || ''), customer: String(q.customer || ''),
+    address: String(q.address || ''), contact: String(q.contact || ''), phone: String(q.phone || ''),
+    owner: String(q.owner || ''), date: String(q.date || ''), validity: String(q.validity || ''),
+    requirements: String(q.requirements || ''), exclusions: String(q.exclusions || ''),
+    customerType: String(q.customerType || ''), channel: String(q.channel || ''),
+    payments: String(q.payments || ''), channelTerms: String(q.channelTerms || ''),
+    discount: Number(q.discount || 0), deliveryFee: Number(q.deliveryFee || 0), installFee: Number(q.installFee || 0),
+    projectedPrice: Number(q.projectedPrice || 0), linearPrice: Number(q.linearPrice || 0),
+    factoryOrderNo: String(q.factoryOrderNo || ''), measurementDate: String(q.measurementDate || ''),
+    deliveryDate: String(q.deliveryDate || ''), clientProjectedArea: Number(q.clientProjectedArea || 0),
+    clientDoorArea: Number(q.clientDoorArea || 0), orderNote: String(q.orderNote || ''),
+    rooms: Array.isArray(q.rooms) ? q.rooms.map(String) : [], activeRoom: String(q.activeRoom || ''),
+    baseMaterial: material(q.baseMaterial), doorMaterial: material(q.doorMaterial),
+    rows: Array.isArray(q.rows) ? q.rows.map(row => ({
+      name: String(row.name || ''), category: String(row.category || ''), mode: String(row.mode || ''),
+      unit: String(row.unit || ''), qty: Number(row.qty || 0), quantity: Number(row.quantity || row.qty || 0),
+      width: Number(row.width || 0), height: Number(row.height || 0), depth: Number(row.depth || 0), deduct: Number(row.deduct || 0),
+      price: Number(row.price || 0), amount: Number(row.amount || 0), room: String(row.room || ''),
+      spec: String(row.spec || ''), remark: String(row.remark || ''), note: String(row.note || ''),
+      included: Boolean(row.included), charge: String(row.charge || ''), includedIn: String(row.includedIn || ''),
+      expandedArea: Number(row.expandedArea || 0), directArea: Number(row.directArea || 0), measureVersion: Number(row.measureVersion || 0), measureSource: String(row.measureSource || ''), material: material(row.material),
+      standalonePrice: Number(row.standalonePrice || 0), upgradePrice: Number(row.upgradePrice || 0)
+    })) : [],
+    documents: Array.isArray(q.documents) ? copy(q.documents) : [],
+    subtotal: Number(q.subtotal || 0), amount: Number(q.amount || 0), savedAt: new Date().toISOString()
+  };
+};
+
+/* Small shared debounce/flush helper for cloud-backed quotation drafts. */
+window.__YJCloudDraftQueue = function createYJCloudDraftQueue({delay=900, save, onState=()=>{}}={}) {
+  if (typeof save !== 'function') throw new TypeError('Cloud draft save callback is required');
+  let timer = null;
+  let pending = null;
+  let sequence = 0;
+  let dirty = false;
+  let chain = Promise.resolve();
+
+  function schedule(payload) {
+    pending = payload;
+    dirty = true;
+    sequence += 1;
+    if (timer) clearTimeout(timer);
+    onState('pending');
+    timer = setTimeout(() => { flush().catch(() => {}); }, delay);
+  }
+
+  function flush() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (pending === null) return chain;
+    const payload = pending;
+    pending = null;
+    const version = sequence;
+    onState('saving');
+    const attempt = chain.catch(() => {}).then(() => save(payload));
+    chain = attempt.then(result => {
+      if (version === sequence) {
+        dirty = false;
+        onState('saved', result);
+      }
+      return result;
+    }, error => {
+      if (version === sequence) {
+        if (pending === null) pending = payload;
+        dirty = true;
+        onState('failed', error);
+      }
+      throw error;
+    });
+    return chain;
+  }
+
+  async function wait() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (pending !== null) await flush();
+    else await chain;
+    return !dirty;
+  }
+
+  function cancel() {
+    if (timer) { clearTimeout(timer); timer = null; }
+  }
+
+  return { schedule, flush, wait, cancel, get dirty() { return dirty; } };
+};
+window.__YJQuoteQuantity = function calculateQuoteQuantity(mode, quantity, widthMm, heightMm, lengthM) {
+  const q = Number(quantity || 0), width = Number(widthMm || 0), height = Number(heightMm || 0);
+  if (mode === '投影' || mode === '平方') return Math.round(width * height / 1000000 * 10000) / 10000;
+  if (mode === '延米') return Math.round((Number(lengthM || 0) || width / 1000) * 10000) / 10000;
+  return q;
+};
+window.__YJQuotePricingMode = function quotePricingMode(unit) {
+  const value = String(unit || '项');
+  if (value === '投影') return '投影';
+  if (['平方','m²','㎡'].includes(value)) return '平方';
+  if (['延米','m'].includes(value)) return '延米';
+  return '按单位';
+};
+window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
+  const copy = value => value == null ? value : JSON.parse(JSON.stringify(value));
+  const material = value => {
+    const source = value || {};
+    return Object.fromEntries(['brand','substrate','thickness','color','door','finish','grade','model','spec'].filter(key => source[key] != null).map(key => [key, String(source[key])]));
+  };
+  return {
+    type: '全屋定制', customerId: String(q.customerId || ''), customer: String(q.customer || ''),
+    address: String(q.address || ''), contact: String(q.contact || ''), phone: String(q.phone || ''),
+    owner: String(q.owner || ''), date: String(q.date || ''), validity: String(q.validity || ''),
+    requirements: String(q.requirements || ''), exclusions: String(q.exclusions || ''),
+    customerType: String(q.customerType || ''), channel: String(q.channel || ''),
+    payments: String(q.payments || ''), channelTerms: String(q.channelTerms || ''),
+    discount: Number(q.discount || 0), deliveryFee: Number(q.deliveryFee || 0), installFee: Number(q.installFee || 0),
+    projectedPrice: Number(q.projectedPrice || 0), linearPrice: Number(q.linearPrice || 0),
+    factoryOrderNo: String(q.factoryOrderNo || ''), measurementDate: String(q.measurementDate || ''),
+    deliveryDate: String(q.deliveryDate || ''), clientProjectedArea: Number(q.clientProjectedArea || 0),
+    clientDoorArea: Number(q.clientDoorArea || 0), orderNote: String(q.orderNote || ''),
+    rooms: Array.isArray(q.rooms) ? q.rooms.map(String) : [], activeRoom: String(q.activeRoom || ''),
+    baseMaterial: material(q.baseMaterial), doorMaterial: material(q.doorMaterial),
+    rows: Array.isArray(q.rows) ? q.rows.map(row => ({
+      name: String(row.name || ''), category: String(row.category || ''), mode: String(row.mode || ''),
+      unit: String(row.unit || ''), qty: Number(row.qty || 0), quantity: Number(row.quantity || row.qty || 0),
+      width: Number(row.width || 0), height: Number(row.height || 0), depth: Number(row.depth || 0), deduct: Number(row.deduct || 0),
+      price: Number(row.price || 0), amount: Number(row.amount || 0), room: String(row.room || ''),
+      spec: String(row.spec || ''), remark: String(row.remark || ''), note: String(row.note || ''),
+      included: Boolean(row.included), charge: String(row.charge || ''), includedIn: String(row.includedIn || ''),
+      expandedArea: Number(row.expandedArea || 0), directArea: Number(row.directArea || 0), measureVersion: Number(row.measureVersion || 0), measureSource: String(row.measureSource || ''), material: material(row.material),
+      standalonePrice: Number(row.standalonePrice || 0), upgradePrice: Number(row.upgradePrice || 0)
+    })) : [],
+    documents: Array.isArray(q.documents) ? copy(q.documents) : [],
+    subtotal: Number(q.subtotal || 0), amount: Number(q.amount || 0), savedAt: new Date().toISOString()
+  };
+};
+
+/* Small shared debounce/flush helper for cloud-backed quotation drafts. */
+window.__YJCloudDraftQueue = function createYJCloudDraftQueue({delay=900, save, onState=()=>{}}={}) {
+  if (typeof save !== 'function') throw new TypeError('Cloud draft save callback is required');
+  let timer = null;
+  let pending = null;
+  let sequence = 0;
+  let dirty = false;
+  let chain = Promise.resolve();
+
+  function schedule(payload) {
+    pending = payload;
+    dirty = true;
+    sequence += 1;
+    if (timer) clearTimeout(timer);
+    onState('pending');
+    timer = setTimeout(() => { flush().catch(() => {}); }, delay);
+  }
+
+  function flush() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (pending === null) return chain;
+    const payload = pending;
+    pending = null;
+    const version = sequence;
+    onState('saving');
+    const attempt = chain.catch(() => {}).then(() => save(payload));
+    chain = attempt.then(result => {
+      if (version === sequence) {
+        dirty = false;
+        onState('saved', result);
+      }
+      return result;
+    }, error => {
+      if (version === sequence) {
+        if (pending === null) pending = payload;
+        dirty = true;
+        onState('failed', error);
+      }
+      throw error;
+    });
+    return chain;
+  }
+
+  async function wait() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (pending !== null) await flush();
+    else await chain;
+    return !dirty;
+  }
+
+  function cancel() {
+    if (timer) { clearTimeout(timer); timer = null; }
+  }
+
+  return { schedule, flush, wait, cancel, get dirty() { return dirty; } };
+};
+window.__YJQuoteQuantity = function calculateQuoteQuantity(mode, quantity, widthMm, heightMm, lengthM) {
+  const q = Number(quantity || 0), width = Number(widthMm || 0), height = Number(heightMm || 0);
+  if (mode === '投影' || mode === '平方') return Math.round(width * height / 1000000 * 10000) / 10000;
+  if (mode === '延米') return Math.round((Number(lengthM || 0) || width / 1000) * 10000) / 10000;
+  return q;
+};
+window.__YJQuotePricingMode = function quotePricingMode(unit) {
+  const value = String(unit || '项');
+  if (value === '投影') return '投影';
+  if (['平方','m²','㎡'].includes(value)) return '平方';
+  if (['延米','m'].includes(value)) return '延米';
+  return '按单位';
+};
+window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
+  const copy = value => value == null ? value : JSON.parse(JSON.stringify(value));
+  const material = value => {
+    const source = value || {};
+    return Object.fromEntries(['brand','substrate','thickness','color','door','finish','grade','model','spec'].filter(key => source[key] != null).map(key => [key, String(source[key])]));
+  };
+  return {
+    type: '全屋定制', customerId: String(q.customerId || ''), customer: String(q.customer || ''),
+    address: String(q.address || ''), contact: String(q.contact || ''), phone: String(q.phone || ''),
+    owner: String(q.owner || ''), date: String(q.date || ''), validity: String(q.validity || ''),
+    requirements: String(q.requirements || ''), exclusions: String(q.exclusions || ''),
+    customerType: String(q.customerType || ''), channel: String(q.channel || ''),
+    payments: String(q.payments || ''), channelTerms: String(q.channelTerms || ''),
+    discount: Number(q.discount || 0), deliveryFee: Number(q.deliveryFee || 0), installFee: Number(q.installFee || 0),
+    projectedPrice: Number(q.projectedPrice || 0), linearPrice: Number(q.linearPrice || 0),
+    factoryOrderNo: String(q.factoryOrderNo || ''), measurementDate: String(q.measurementDate || ''),
+    deliveryDate: String(q.deliveryDate || ''), clientProjectedArea: Number(q.clientProjectedArea || 0),
+    clientDoorArea: Number(q.clientDoorArea || 0), orderNote: String(q.orderNote || ''),
+    rooms: Array.isArray(q.rooms) ? q.rooms.map(String) : [], activeRoom: String(q.activeRoom || ''),
+    baseMaterial: material(q.baseMaterial), doorMaterial: material(q.doorMaterial),
+    rows: Array.isArray(q.rows) ? q.rows.map(row => ({
+      name: String(row.name || ''), category: String(row.category || ''), mode: String(row.mode || ''),
+      unit: String(row.unit || ''), qty: Number(row.qty || 0), quantity: Number(row.quantity || row.qty || 0),
+      width: Number(row.width || 0), height: Number(row.height || 0), depth: Number(row.depth || 0), deduct: Number(row.deduct || 0),
+      price: Number(row.price || 0), amount: Number(row.amount || 0), room: String(row.room || ''),
+      spec: String(row.spec || ''), remark: String(row.remark || ''), note: String(row.note || ''),
+      included: Boolean(row.included), charge: String(row.charge || ''), includedIn: String(row.includedIn || ''),
+      expandedArea: Number(row.expandedArea || 0), directArea: Number(row.directArea || 0), measureVersion: Number(row.measureVersion || 0), measureSource: String(row.measureSource || ''), material: material(row.material),
+      standalonePrice: Number(row.standalonePrice || 0), upgradePrice: Number(row.upgradePrice || 0)
+    })) : [],
+    documents: Array.isArray(q.documents) ? copy(q.documents) : [],
+    subtotal: Number(q.subtotal || 0), amount: Number(q.amount || 0), savedAt: new Date().toISOString()
+  };
+};
+
+/* Small shared debounce/flush helper for cloud-backed quotation drafts. */
+window.__YJCloudDraftQueue = function createYJCloudDraftQueue({delay=900, save, onState=()=>{}}={}) {
+  if (typeof save !== 'function') throw new TypeError('Cloud draft save callback is required');
+  let timer = null;
+  let pending = null;
+  let sequence = 0;
+  let dirty = false;
+  let chain = Promise.resolve();
+
+  function schedule(payload) {
+    pending = payload;
+    dirty = true;
+    sequence += 1;
+    if (timer) clearTimeout(timer);
+    onState('pending');
+    timer = setTimeout(() => { flush().catch(() => {}); }, delay);
+  }
+
+  function flush() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (pending === null) return chain;
+    const payload = pending;
+    pending = null;
+    const version = sequence;
+    onState('saving');
+    const attempt = chain.catch(() => {}).then(() => save(payload));
+    chain = attempt.then(result => {
+      if (version === sequence) {
+        dirty = false;
+        onState('saved', result);
+      }
+      return result;
+    }, error => {
+      if (version === sequence) {
+        if (pending === null) pending = payload;
+        dirty = true;
+        onState('failed', error);
+      }
+      throw error;
+    });
+    return chain;
+  }
+
+  async function wait() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (pending !== null) await flush();
+    else await chain;
+    return !dirty;
+  }
+
+  function cancel() {
+    if (timer) { clearTimeout(timer); timer = null; }
+  }
+
+  return { schedule, flush, wait, cancel, get dirty() { return dirty; } };
+};
+window.__YJQuoteQuantity = function calculateQuoteQuantity(mode, quantity, widthMm, heightMm, lengthM) {
+  const q = Number(quantity || 0), width = Number(widthMm || 0), height = Number(heightMm || 0);
+  if (mode === '投影' || mode === '平方') return Math.round(width * height / 1000000 * 10000) / 10000;
+  if (mode === '延米') return Math.round((Number(lengthM || 0) || width / 1000) * 10000) / 10000;
+  return q;
+};
+window.__YJQuotePricingMode = function quotePricingMode(unit) {
+  const value = String(unit || '项');
+  if (value === '投影') return '投影';
+  if (['平方','m²','㎡'].includes(value)) return '平方';
+  if (['延米','m'].includes(value)) return '延米';
+  return '按单位';
+};
+window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
+  const copy = value => value == null ? value : JSON.parse(JSON.stringify(value));
+  const material = value => {
+    const source = value || {};
+    return Object.fromEntries(['brand','substrate','thickness','color','door','finish','grade','model','spec'].filter(key => source[key] != null).map(key => [key, String(source[key])]));
+  };
+  return {
+    type: '全屋定制', customerId: String(q.customerId || ''), customer: String(q.customer || ''),
+    address: String(q.address || ''), contact: String(q.contact || ''), phone: String(q.phone || ''),
+    owner: String(q.owner || ''), date: String(q.date || ''), validity: String(q.validity || ''),
+    requirements: String(q.requirements || ''), exclusions: String(q.exclusions || ''),
+    customerType: String(q.customerType || ''), channel: String(q.channel || ''),
+    payments: String(q.payments || ''), channelTerms: String(q.channelTerms || ''),
+    discount: Number(q.discount || 0), deliveryFee: Number(q.deliveryFee || 0), installFee: Number(q.installFee || 0),
+    projectedPrice: Number(q.projectedPrice || 0), linearPrice: Number(q.linearPrice || 0),
+    factoryOrderNo: String(q.factoryOrderNo || ''), measurementDate: String(q.measurementDate || ''),
+    deliveryDate: String(q.deliveryDate || ''), clientProjectedArea: Number(q.clientProjectedArea || 0),
+    clientDoorArea: Number(q.clientDoorArea || 0), orderNote: String(q.orderNote || ''),
+    rooms: Array.isArray(q.rooms) ? q.rooms.map(String) : [], activeRoom: String(q.activeRoom || ''),
+    baseMaterial: material(q.baseMaterial), doorMaterial: material(q.doorMaterial),
+    rows: Array.isArray(q.rows) ? q.rows.map(row => ({
+      name: String(row.name || ''), category: String(row.category || ''), mode: String(row.mode || ''),
+      unit: String(row.unit || ''), qty: Number(row.qty || 0), quantity: Number(row.quantity || row.qty || 0),
+      width: Number(row.width || 0), height: Number(row.height || 0), depth: Number(row.depth || 0), deduct: Number(row.deduct || 0),
+      price: Number(row.price || 0), amount: Number(row.amount || 0), room: String(row.room || ''),
+      spec: String(row.spec || ''), remark: String(row.remark || ''), note: String(row.note || ''),
+      included: Boolean(row.included), charge: String(row.charge || ''), includedIn: String(row.includedIn || ''),
+      expandedArea: Number(row.expandedArea || 0), directArea: Number(row.directArea || 0), measureVersion: Number(row.measureVersion || 0), measureSource: String(row.measureSource || ''), material: material(row.material),
+      standalonePrice: Number(row.standalonePrice || 0), upgradePrice: Number(row.upgradePrice || 0)
+    })) : [],
+    documents: Array.isArray(q.documents) ? copy(q.documents) : [],
+    subtotal: Number(q.subtotal || 0), amount: Number(q.amount || 0), savedAt: new Date().toISOString()
+  };
+};
+
   // Included inside the preview's existing closure; keeps the current customer and product data.
   let workshopKind='base',workshopCostVisible=false,workshopDimensions={},workshopMeasureRow=null,workshopPickerGroup='基装',workshopRestore=null;
   let workshopRules={management:0,tax:0,template:'standard'},workshopChanges=[];
@@ -5177,12 +5801,25 @@ window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
   function nwLoadScript(path,globalName){if(window[globalName])return Promise.resolve(window[globalName]);if(!nwScripts.has(path))nwScripts.set(path,new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=path;script.onload=()=>resolve(window[globalName]);script.onerror=()=>{nwScripts.delete(path);script.remove();reject(Error('读取组件加载失败，请检查网络后重试'));};document.head.append(script);}));return nwScripts.get(path);}
   function nwRowsFromGrid(grid){const fields={name:/项目名称|项目内容|工程项目|品名|商品名称|名称/,unit:/^单位$|计量单位/,qty:/数量|工程量|面积/,price:/单价|报价单价/,amount:/^金额$|合价|合计金额/,room:/房间|空间/,spec:/规格|型号|材料.*工艺/,remark:/备注|说明/,category:/分类|类别/};let header=-1,map={};for(let i=0;i<Math.min(grid.length,40);i++){const candidate={};Object.entries(fields).forEach(([key,re])=>{const index=grid[i].findIndex(v=>re.test(String(v||'').replace(/\s/g,'')));if(index>=0)candidate[key]=index;});if(candidate.name!==undefined&&(candidate.qty!==undefined||candidate.price!==undefined)){header=i;map=candidate;break;}}if(header<0)return [];return grid.slice(header+1).map(cells=>{const r=Object.fromEntries(Object.entries(map).map(([k,i])=>[k,cells[i]??'']));const numeric=v=>String(v??'').replace(/[,，¥￥\s]/g,'');r.qty=numeric(r.qty);r.price=numeric(r.price);r.amount=numeric(r.amount);return r;}).filter(r=>String(r.name||'').trim()&&!/合计|小计|总计|总价|项目名称/.test(String(r.name))&&(r.qty!==''||r.price!==''));}
   function nwRowsFromText(text){const rows=[];for(const line of text.split(/\r?\n/)){const m=line.trim().match(/^(.+?)\s+(㎡|m²|m2|平方米|延米|米|m|项|个|套|樘|件)\s+([\d,.]+)\s+([\d,.]+)(?:\s+([\d,.]+))?(.*)$/i);if(!m||/合计|小计|总计/.test(m[1]))continue;rows.push({name:m[1].trim(),unit:m[2],qty:m[3].replaceAll(',',''),price:m[4].replaceAll(',',''),amount:m[5]?.replaceAll(',','')||'',remark:m[6]?.trim()||'',room:''});}return rows;}
-  async function nwOcr(file,rotation=0){const T=await loadTesseract(),worker=await T.createWorker(['chi_sim','eng'],1,{logger:m=>{const el=$('#rxImportStatus');if(el)el.textContent='浏览器内识别图片 '+Math.round((m.progress||0)*100)+'% · 识别后请核对';}});try{let source=file;if(rotation){const bitmap=await createImageBitmap(file),canvas=document.createElement('canvas'),angle=rotation*Math.PI/180;canvas.width=rotation%180?bitmap.height:bitmap.width;canvas.height=rotation%180?bitmap.width:bitmap.height;const ctx=canvas.getContext('2d');ctx.translate(canvas.width/2,canvas.height/2);ctx.rotate(angle);ctx.drawImage(bitmap,-bitmap.width/2,-bitmap.height/2);bitmap.close();source=canvas;}const result=await worker.recognize(source);return result.data.text||'';}finally{await worker.terminate();}}
+  async function nwOcrDetailed(file,rotation=0){
+    const T=await loadTesseract(),worker=await T.createWorker(['chi_sim','eng'],1,{logger:m=>{const el=$('#rxImportStatus');if(el)el.textContent='图片增强识别 '+Math.round((m.progress||0)*100)+'% · 完成后请对照原单';}});
+    try{
+      let source=file;
+      if(typeof createImageBitmap==='function'){
+        const bitmap=await createImageBitmap(file),maxSide=Math.max(bitmap.width,bitmap.height),scale=maxSide<1400?2:maxSide<2800?2800/maxSide:1;
+        const width=Math.max(1,Math.round(bitmap.width*scale)),height=Math.max(1,Math.round(bitmap.height*scale)),angle=rotation*Math.PI/180,sw=rotation%180?height:width,sh=rotation%180?width:height,canvas=document.createElement('canvas');
+        canvas.width=sw;canvas.height=sh;const ctx=canvas.getContext('2d',{willReadFrequently:false});ctx.fillStyle='#fff';ctx.fillRect(0,0,sw,sh);ctx.filter='grayscale(1) contrast(1.25) brightness(1.04)';ctx.translate(sw/2,sh/2);ctx.rotate(angle);ctx.drawImage(bitmap,-width/2,-height/2,width,height);bitmap.close();source=canvas;
+      }
+      const result=await worker.recognize(source),confidence=Number(result.data?.confidence);
+      return {text:result.data?.text||'',confidence:Number.isFinite(confidence)?Math.round(confidence):null};
+    }finally{await worker.terminate();}
+  }
+  async function nwOcr(file,rotation=0){return (await nwOcrDetailed(file,rotation)).text;}
   const nwExtractPrevious=rxExtract;
   rxExtract=async function(file,rotation=0){if(!file)throw Error('请先选择文件');if(['localhost','127.0.0.1'].includes(location.hostname)){try{return await nwExtractPrevious(file,rotation);}catch(e){if($('#rxImportStatus'))$('#rxImportStatus').textContent='本机服务未连接，改用浏览器读取…';}}
-    if(/\.(xlsx?|xlsm|csv|tsv)$/i.test(file.name)){const X=await nwLoadScript('./vendor/xlsx.full.min.js','XLSX'),buffer=await file.arrayBuffer(),csv=/\.(csv|tsv)$/i.test(file.name),decoded=csv?new TextDecoder('utf-8',{fatal:false}).decode(buffer):null,source=csv&&decoded.includes('�')?new TextDecoder('gb18030').decode(buffer):decoded,book=X.read(csv?source:buffer,{type:csv?'string':'array'}),sheets=book.SheetNames.map(name=>({name,grid:X.utils.sheet_to_json(book.Sheets[name],{header:1,defval:'',raw:true})}));return {rows:sheets.flatMap(s=>nwRowsFromGrid(s.grid)),sheets,text:sheets.map(s=>s.grid.map(r=>r.join('\t')).join('\n')).join('\n\n'),warnings:['请核对工作表、工程量、单价与原单合计；未自动保存。']};}
-    let text='';if(file.type.startsWith('image/')||/\.(png|jpe?g|webp|bmp)$/i.test(file.name))text=await nwOcr(file,rotation);else if(/\.pdf$/i.test(file.name)){const P=await import('./vendor/pdf.mjs');P.GlobalWorkerOptions.workerSrc='./vendor/pdf.worker.mjs';const task=P.getDocument({data:new Uint8Array(await file.arrayBuffer())}),pdf=await task.promise;try{for(let i=1;i<=pdf.numPages;i++){if(i>30)throw Error('PDF超过30页，请拆分后导入');const page=await pdf.getPage(i),content=await page.getTextContent();let pageText='';for(const item of content.items)pageText+=item.str+(item.hasEOL?'\n':' ');if(pageText.trim().length<15){const viewport=page.getViewport({scale:1.5}),canvas=document.createElement('canvas');canvas.width=viewport.width;canvas.height=viewport.height;await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;const blob=await new Promise(resolve=>canvas.toBlob(resolve));pageText=await nwOcr(blob);}text+=pageText+'\n';}}finally{await pdf.destroy();}}else throw Error('支持图片、PDF、Excel或CSV，请检查文件格式');
-    let rows=nwRowsFromText(text);if(!rows.length){rows=parseFactoryBillText(text,'五金单').filter(r=>r.product).map(r=>({name:r.product,unit:r.unit,qty:r.qty,price:r.unitPrice,amount:r.amount,spec:r.spec||'',remark:r.remark||''}));}return {text,rows,meta:parseFactoryBillHeader(text),warnings:['图片识别可能错行或漏项，请对照原图核对；无法确认的字段请手填。']};
+    if(/\.(xlsx?|xlsm|csv|tsv)$/i.test(file.name)){const X=await nwLoadScript('./vendor/xlsx.full.min.js','XLSX'),buffer=await file.arrayBuffer(),csv=/\.(csv|tsv)$/i.test(file.name),decoded=csv?new TextDecoder('utf-8',{fatal:false}).decode(buffer):null,source=csv&&decoded.includes('�')?new TextDecoder('gb18030').decode(buffer):decoded,book=X.read(csv?source:buffer,{type:csv?'string':'array'}),sheets=book.SheetNames.map(name=>({name,grid:X.utils.sheet_to_json(book.Sheets[name],{header:1,defval:'',raw:true})}));return {rows:sheets.flatMap(s=>nwRowsFromGrid(s.grid)),sheets,text:sheets.map(s=>s.grid.map(r=>r.join('\t')).join('\n')).join('\n\n'),confidence:null,warnings:['请核对工作表、数量、单价与原单合计；未自动保存。']};}
+    let text='',confidence=null;if(file.type.startsWith('image/')||/\.(png|jpe?g|webp|bmp)$/i.test(file.name)){const result=await nwOcrDetailed(file,rotation);text=result.text;confidence=result.confidence;}else if(/\.pdf$/i.test(file.name)){const P=await import('./vendor/pdf.mjs');P.GlobalWorkerOptions.workerSrc='./vendor/pdf.worker.mjs';const task=P.getDocument({data:new Uint8Array(await file.arrayBuffer())}),pdf=await task.promise,ocrScores=[];try{for(let i=1;i<=pdf.numPages;i++){if(i>30)throw Error('PDF超过30页，请拆分后导入');const page=await pdf.getPage(i),content=await page.getTextContent();let pageText='';for(const item of content.items)pageText+=item.str+(item.hasEOL?'\n':' ');if(pageText.trim().length<15){const viewport=page.getViewport({scale:2}),canvas=document.createElement('canvas');canvas.width=viewport.width;canvas.height=viewport.height;await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;const blob=await new Promise(resolve=>canvas.toBlob(resolve));const ocr=await nwOcrDetailed(blob);pageText=ocr.text;if(ocr.confidence!==null)ocrScores.push(ocr.confidence);}text+=pageText+'\n';}}finally{await pdf.destroy();}if(ocrScores.length)confidence=Math.round(ocrScores.reduce((a,b)=>a+b,0)/ocrScores.length);}else throw Error('支持图片、PDF、Excel或CSV，请检查文件格式');
+    let rows=nwRowsFromText(text);if(!rows.length){rows=parseFactoryBillText(text,'五金单').filter(r=>r.product).map(r=>({name:r.product,unit:r.unit,qty:r.qty,price:r.unitPrice,amount:r.amount,spec:r.spec||'',remark:r.remark||''}));}const warnings=['图片识别可能错行或漏项，请对照原图核对；无法确认的字段请手填。'];if(confidence!==null&&confidence<65)warnings.unshift(`OCR置信度 ${confidence}% 较低，建议逐项对照原单补核。`);return {text,rows,meta:parseFactoryBillHeader(text),confidence,warnings};
   };
 
   // Reusable customer configurations; supplier purchase prices never seed sales rates.
@@ -6441,7 +7078,7 @@ window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
 
 // Factory production and finance module. All values are read from the protected API.
 {
-  const fc = { loading:false, loaded:false, error:'', orders:[], safeOrders:[], employees:[], safeEmployees:[], attendance:[], inventory:[], valuation:[], movements:[], ownerMovements:[], purchaseInvoices:[], directPurchaseCosts:[], fixed:[], payroll:[], monthly:[], yearly:[], costEntries:[],costEntriesOrder:'',costEntriesLoading:false,costEntriesError:'',dossier:null,dossierOrder:'',assignmentUsers:[],selectedOrder:'',attendanceMonth:'',financeMonth:'',accounts:[],cashEntries:[],attendanceCosts:[],history:[],historyOrder:'',purchaseDraft:null,configRequestIds:new Map(),productionFilter:'生产中',inventoryCategory:'五金',attendanceExpandedDate:'' };
+  const fc = { loading:false, loaded:false, error:'', orders:[], safeOrders:[], employees:[], safeEmployees:[], attendance:[], inventory:[], valuation:[], movements:[], ownerMovements:[], purchaseInvoices:[], directPurchaseCosts:[], fixed:[], payroll:[], monthly:[], yearly:[], costEntries:[],costEntriesOrder:'',costEntriesLoading:false,costEntriesError:'',dossier:null,dossierOrder:'',assignmentUsers:[],selectedOrder:'',attendanceMonth:'',financeMonth:'',accounts:[],cashEntries:[],attendanceCosts:[],history:[],historyOrder:'',purchaseDraft:null,configRequestIds:new Map(),productionFilter:'生产中',inventoryCategory:'五金',attendanceExpandedDate:'',bulkInventoryDraft:null,payrollTargets:[] };
   const fcClient=()=>window.__ANJU_AUTH__?.client||null;
   const fcRpc=async(name,args={})=>{const c=fcClient();if(!c)throw Error('请先登录云端账号');const {data,error}=await c.schema('api').rpc(name,args);if(error)throw error;return data||[]};
   const fcRead=async(name)=>{const c=fcClient();if(!c)throw Error('请先登录云端账号');const {data,error}=await c.schema('api').from(name).select('*');if(error)throw error;return data||[]};
@@ -6452,6 +7089,7 @@ window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
   const fcIsOwner=()=>role==='owner';
   const fcSafeRole=()=>['factory','designer','foreman'].includes(role);
   const fcDateVal=(d)=>String(d||'').slice(0,10);
+  const fcProofButtons=docs=>(Array.isArray(docs)?docs:[]).map(d=>`<button type="button" class="btn small fc-proof-link" data-action="fc-proof-view" data-id="${esc(d.path)}">${esc(d.name||'收付款凭证')}</button>`).join('')||'—';
   async function fcLoad(force=false){
     if(!['owner','factory','designer','foreman'].includes(role)||module!=='factory'||fc.loading||fc.loaded&&!force)return;
     fc.loading=true;fc.error='';render();
@@ -6463,8 +7101,8 @@ window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
       const common=[fcRpc('factory_work_orders_safe'),fcRpc('factory_employees_safe'),fcRpc('factory_attendance_safe'),fcRpc('factory_inventory_quantities'),fcRpc('factory_inventory_movements_safe'),invoiceRows];
       if(fcIsOwner()){
         const payrollMonth=fc.attendanceMonth||fcMonth();
-        const [safeOrders,safeEmployees,attendance,inventory,movements,purchaseInvoices,orders,employees,payroll,fixed,ownerMovements,valuation,monthly,yearly,accounts,cashEntries,attendanceCosts,assignmentUsers]=await Promise.all([...common,fcRpc('owner_factory_work_orders'),fcRpc('owner_factory_employees'),fcRpc('owner_factory_payroll',{p_month:`${payrollMonth}-01`}),fcRead('owner_fixed_cost_ledger'),fcRpc('owner_factory_inventory_movements'),fcRpc('owner_factory_inventory_valuation'),fcRead('owner_monthly_net_profit'),fcRead('owner_yearly_net_profit'),fcRpc('owner_business_accounts'),fcRpc('owner_factory_cash_ledger_v2'),fcRpc('owner_factory_attendance_costs'),fcRpc('factory_assignment_users')]);
-        Object.assign(fc,{safeOrders,safeEmployees,attendance,inventory,movements,purchaseInvoices,orders,employees,payroll,fixed,ownerMovements,valuation,monthly,yearly,accounts,cashEntries,attendanceCosts,assignmentUsers});
+        const [safeOrders,safeEmployees,attendance,inventory,movements,purchaseInvoices,orders,employees,payroll,fixed,ownerMovements,valuation,monthly,yearly,accounts,cashEntries,attendanceCosts,assignmentUsers,payrollTargets]=await Promise.all([...common,fcRpc('owner_factory_work_orders'),fcRpc('owner_factory_employees'),fcRpc('owner_factory_payroll',{p_month:`${payrollMonth}-01`}),fcRead('owner_fixed_cost_ledger'),fcRpc('owner_factory_inventory_movements'),fcRpc('owner_factory_inventory_valuation'),fcRead('owner_monthly_net_profit'),fcRead('owner_yearly_net_profit'),fcRpc('owner_business_accounts'),fcRpc('owner_factory_cash_ledger_v3'),fcRpc('owner_factory_attendance_costs'),fcRpc('factory_assignment_users'),fcRpc('owner_factory_payroll_adjustment_targets',{p_month:`${payrollMonth}-01`})]);
+        Object.assign(fc,{safeOrders,safeEmployees,attendance,inventory,movements,purchaseInvoices,orders,employees,payroll,fixed,ownerMovements,valuation,monthly,yearly,accounts,cashEntries,attendanceCosts,assignmentUsers,payrollTargets});
       }else{const [safeOrders,safeEmployees,attendance,inventory,movements,purchaseInvoices,assignmentUsers,fixed]=await Promise.all([...common,fcRpc('factory_assignment_users'),fcRpc('factory_manager_fixed_costs_v2')]);Object.assign(fc,{safeOrders,safeEmployees,attendance,inventory,movements,purchaseInvoices,assignmentUsers,fixed});}
       fc.loaded=true;} 
     }catch(e){fc.error=fcFail(e);fc.loaded=true;}finally{fc.loading=false;render();}
@@ -6519,18 +7157,19 @@ window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
   }
   function fcProduction(){
     if(!fc.loaded&&!fc.loading){queueMicrotask(()=>fcLoad());return fcHead('工厂 · 订单','生产订单','正在加载云端订单…')+fcBanner();}
-    const source=fcIsOwner()?fc.orders:fc.safeOrders,done=o=>!!o.completed_at||['已完工','已结算'].includes(o.status)||o.current_process==='已完工';
+    const source=fcIsOwner()?fc.orders:fc.safeOrders,done=o=>!!o.completed_at||['已完工','已结算'].includes(o.status)||o.current_process==='已完工',receivedByOrder=new Map();
+    if(fcIsOwner())for(const entry of fc.cashEntries)if(entry.entry_kind==='收款')receivedByOrder.set(entry.order_id,(receivedByOrder.get(entry.order_id)||0)+Number(entry.amount||0));
     const groups={'接单中':o=>!done(o)&&(['未排产','待开工','待排产','接单中'].includes(o.status)||['未排产','待开工','待排产','接单中'].includes(o.current_process)),'生产中':o=>!done(o)&&o.current_process!=='安装'&&!(['未排产','待开工','待排产','接单中'].includes(o.status)||['未排产','待开工','待排产','接单中'].includes(o.current_process)),'安装中':o=>!done(o)&&o.current_process==='安装','已完工':done};
     const selected=fc.productionFilter in groups?fc.productionFilter:'生产中',orders=source.filter(groups[selected]);
-    const rows=orders.map(o=>fcIsOwner()?`<tr><td><button class="btn small" data-action="fc-order-open" data-id="${o.id}">${esc(o.order_no)}</button><small class="cell-sub">${esc(o.customer_project)}</small></td><td>${esc(o.business_source)}</td><td>${esc(o.current_process)}</td><td>${esc(o.status)}</td><td>${fcMoney(o.order_amount)}</td><td>${fcMoney(o.total_cost)}</td><td>${fcMoney(o.gross_profit)}</td><td>${o.gross_margin==null?'—':(Number(o.gross_margin)*100).toFixed(2)+'%'}</td><td>${o.completed_at?fcDateVal(o.completed_at):'—'}</td></tr>`:`<tr><td><button class="btn small" data-action="fc-order-open" data-id="${o.id}">${esc(o.order_no)}</button><small class="cell-sub">${esc(o.customer_project)}</small></td><td>${esc(o.business_source)}${o.business_source==='渠道'&&o.channel_customer_name?` · ${esc(o.channel_customer_name)}`:''}</td><td>${esc(o.current_process)}</td><td>${esc(o.delivery_date||'—')}</td></tr>`).join('');
-    const heads=fcIsOwner()?['订单 / 客户','来源','当前工序','状态','接单额','直接成本','毛利','毛利率','完工日期']:['订单 / 项目','来源','当前工序','交期'];
+    const rows=orders.map(o=>{const due=Math.max(0,Number(o.order_amount||0)-(receivedByOrder.get(o.id)||0)),isDone=done(o);return fcIsOwner()?`<tr><td><button class="btn small" data-action="fc-order-open" data-id="${o.id}">${esc(o.order_no)}</button><small class="cell-sub">${esc(o.customer_project)}</small></td><td>${esc(o.business_source)}</td><td>${esc(o.current_process)}</td><td>${esc(o.status)}</td><td>${fcMoney(o.order_amount)}</td><td>${fcMoney(o.total_cost)}</td><td>${fcMoney(o.gross_profit)}</td><td>${o.gross_margin==null?'—':(Number(o.gross_margin)*100).toFixed(2)+'%'}</td><td>${isDone&&due>0?`<strong class="fc-due-alert">待收 ${fcMoney(due)}</strong>`:isDone?'<span class="fc-paid-badge">已收清</span>':'—'}</td><td>${o.completed_at?fcDateVal(o.completed_at):'—'}</td></tr>`:`<tr><td><button class="btn small" data-action="fc-order-open" data-id="${o.id}">${esc(o.order_no)}</button><small class="cell-sub">${esc(o.customer_project)}</small></td><td>${esc(o.business_source)}${o.business_source==='渠道'&&o.channel_customer_name?` · ${esc(o.channel_customer_name)}`:''}</td><td>${esc(o.current_process)}</td><td>${esc(o.delivery_date||'—')}</td></tr>`}).join('');
+    const heads=fcIsOwner()?['订单 / 客户','来源','当前工序','状态','接单额','直接成本','毛利','毛利率','尾款待收','完工日期']:['订单 / 项目','来源','当前工序','交期'];
     const tabs=Object.entries(groups).map(([name,fn])=>`<button class="btn ${selected===name?'primary':''}" data-action="fc-production-filter" data-filter="${name}">${name} <span class="fc-tab-count">${source.filter(fn).length}</span></button>`).join('');
-    return fcHead('工厂 · 订单','生产订单','按接单、生产、安装和完工分类；已完工订单会从进行中分类移出。',fcIsOwner()?`<button class="btn" data-action="fc-refresh">刷新</button><button class="btn primary" data-action="fc-order-new">＋ 新建订单</button>`:`<button class="btn" data-action="fc-refresh">刷新</button>`)+fcBanner()+`<nav class="fc-order-filters" aria-label="订单分类">${tabs}</nav>`+panel(selected,`${orders.length} 单`,fcTable(heads,rows));
+    return fcHead('工厂 · 订单','生产订单','按接单、生产、安装和完工分类；老板可在已完工列表直接查看待收尾款。',fcIsOwner()?`<button class="btn" data-action="fc-refresh">刷新</button><button class="btn primary" data-action="fc-order-new">＋ 新建订单</button>`:`<button class="btn" data-action="fc-refresh">刷新</button>`)+fcBanner()+`<nav class="fc-order-filters" aria-label="订单分类">${tabs}</nav>`+panel(selected,`${orders.length} 单`,fcTable(heads,rows));
   }
   function fcOrderDetail(){
     const o=fc.orders.find(x=>x.id===fc.selectedOrder),s=fc.safeOrders.find(x=>x.id===fc.selectedOrder);if(!o&&!s)return fcProduction();const item=o||s,canOwner=fcIsOwner();
     if((fc.historyOrder!==item.id||canOwner&&fc.costEntriesOrder!==item.id)&&!fc.costEntriesLoading)queueMicrotask(()=>fcLoadCosts(item.id));
-    const dossier=fc.dossierOrder===item.id?(fc.dossier||{}):{},docs=Array.isArray(dossier.documents)?dossier.documents:[],configs=Array.isArray(dossier.material_configs)?dossier.material_configs:[],profile=fc.costEntriesOrder===item.id?(fc.specProfile||{}):{},boardSpecs=Array.isArray(profile.board_specs)?profile.board_specs:[],hardwareDetails=Array.isArray(profile.hardware_details)?profile.hardware_details:[],cashEntries=Array.isArray(dossier.cash_entries)?dossier.cash_entries:[],outsourcingRows=Array.isArray(dossier.outsource)?dossier.outsource:[],siteNotes=Array.isArray(dossier.site_notes)?dossier.site_notes:[],purchaseInvoices=fc.directPurchaseCosts;
+    const dossier=fc.dossierOrder===item.id?(fc.dossier||{}):{},docs=Array.isArray(dossier.documents)?dossier.documents:[],configs=Array.isArray(dossier.material_configs)?dossier.material_configs:[],profile=fc.costEntriesOrder===item.id?(fc.specProfile||{}):{},boardSpecs=Array.isArray(profile.board_specs)?profile.board_specs:[],hardwareDetails=Array.isArray(profile.hardware_details)?profile.hardware_details:[],cashEntries=canOwner?fc.cashEntries.filter(x=>x.order_id===item.id).map(x=>({kind:x.entry_kind,date:x.entry_date,stage:x.payment_stage,sequence:x.receipt_sequence,amount:x.amount,method:x.method,counterparty:x.counterparty,note:x.note,proof_documents:x.proof_documents||[]})):(Array.isArray(dossier.cash_entries)?dossier.cash_entries:[]),outsourcingRows=Array.isArray(dossier.outsource)?dossier.outsource:[],siteNotes=Array.isArray(dossier.site_notes)?dossier.site_notes:[],purchaseInvoices=fc.directPurchaseCosts;
     const costs=canOwner?[
       ['板材（含封边）',Number(item.board_cost||0)+Number(item.edge_cost||0)],
       ['五金',Number(item.hardware_cost||0)],['外购 / 外协',Number(item.outsourcing_cost||0)],['其他',Number(item.other_cost||0)]
@@ -6541,9 +7180,8 @@ window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
     const moves=(canOwner?fc.ownerMovements:fc.movements).filter(x=>x.order_no===item.order_no).map(x=>`<tr><td>${fcDateVal(x.movement_date)}</td><td>${esc(x.movement_type)}</td><td>${esc(x.material_name)}</td><td>${x.quantity} ${esc(x.unit)}</td>${canOwner?`<td>${fcMoney(x.amount)}</td>`:''}<td>${esc(x.purpose||'')}</td></tr>`).join('');
     const moveHeads=canOwner?['日期','类型','材料','数量','订单成本金额','用途 / 工序']:['日期','类型','材料','数量','用途 / 工序'];
     const capability=(text)=>`<p class="fc-empty-capability">${text}</p>`;
-    const checklist=['接单范围','尺寸 / 图纸确认','柜体 / 柜门配置','特殊工艺 / 外协要求','五金及升级约定'];
     const schedule=dossier.schedule||{};
-    const handoff=panel('交期与备注',schedule.delivery_date||item.delivery_date?`交期 ${fcDateVal(schedule.delivery_date||item.delivery_date)}`:'交期待填写',`<div class="fc-dossier-grid"><div><small>交期</small><b>${fcDateVal(schedule.delivery_date||item.delivery_date)||'尚未设置'}</b></div><div class="wide"><small>备注</small><b>${esc(schedule.note||item.note||'暂无备注')}</b></div></div>${canOwner||role==='factory'?`<div class="fc-inline-actions"><button class="btn" data-action="fc-order-schedule" data-id="${item.id}">设置交期 / 备注</button></div>`:''}<div class="fc-checklist">${checklist.map(x=>`<div>○ ${x}<small class="cell-sub">${fc.historyOrder===item.id?'请在图纸、材料配置及生产进程中核对':'加载中…'}</small></div>`).join('')}</div>`)+
+    const handoff=panel('交期与备注',schedule.delivery_date||item.delivery_date?`交期 ${fcDateVal(schedule.delivery_date||item.delivery_date)}`:'交期待填写',`<div class="fc-dossier-grid"><div><small>交期</small><b>${fcDateVal(schedule.delivery_date||item.delivery_date)||'尚未设置'}</b></div><div class="wide"><small>备注</small><b>${esc(schedule.note||item.note||'暂无备注')}</b></div></div>${canOwner||role==='factory'?`<div class="fc-inline-actions"><button class="btn" data-action="fc-order-schedule" data-id="${item.id}">设置交期 / 备注</button></div>`:''}`)+
       '';
     const documents=panel('生产资料与版本','老板与厂长共用同一订单档案，可多选上传订货单、板材单、五金清单、报价及特殊备注；点击附件可预览或下载。',fcTable(['类型 / 版本','文件 / 说明','确认状态','上传日期','操作'],docs.map(d=>`<tr><td>${esc(d.kind)} · ${esc(d.version||'')}</td><td>${esc(d.name)}<small class="cell-sub">${esc(d.note||'')}</small></td><td>${d.confirmed?'已确认':'待核对'}</td><td>${fcDateVal(d.created_at)}</td><td><button class="btn small" data-action="fc-doc-view" data-id="${esc(d.path)}">查看 / 下载</button></td></tr>`).join(''))+`<div class="fc-inline-actions">${fcIsOwner()||role==='factory'?`<button class="btn" data-action="fc-doc-upload" data-id="${item.id}">＋ 上传生产资料</button>`:''}${fcIsOwner()||role==='factory'?`<button class="btn" data-action="fc-config-new" data-id="${item.id}">＋ 材料与柜体配置</button>${fcIsOwner()?`<button class="btn" data-action="fc-order-assign" data-id="${item.id}">分配负责人</button>`:''}`:''}</div>`);
     const materialRows=(canOwner?fc.ownerMovements:fc.movements).filter(x=>x.order_no===item.order_no).map(x=>{const spec=fc.inventory.find(m=>m.material_name===x.material_name);return `<tr><td>${esc(x.material_name)}</td><td>${esc(spec?.spec||'—')}</td><td>${x.quantity} ${esc(x.unit)}</td><td>${esc(x.movement_type)}</td><td>${esc(x.purpose||'')}</td></tr>`}).join('');
@@ -6553,7 +7191,7 @@ window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
     const invoiceRows=purchaseInvoices.map(inv=>{const lines=Array.isArray(inv.lines)?inv.lines:[],files=Array.isArray(inv.documents)?inv.documents:[];const detail=lines.map(line=>`<tr><td>${esc(line.product)}</td><td>${esc(line.spec||'—')}</td><td>${esc(line.quantity)} ${esc(line.unit||'')}</td><td>${fcMoney(line.unit_price)}</td><td>${fcMoney(line.amount)}</td><td>${esc(line.note||'')}</td></tr>`).join('');return `<tr><td>${esc(inv.cost_kind)}</td><td>${esc(inv.supplier||'')}<small class="cell-sub">${esc(inv.bill_no||'无单号')}</small></td><td>${fcDateVal(inv.bill_date)}</td><td><details><summary>${lines.length} 行 · 查看核对明细</summary>${fcTable(['品名','规格','数量 / 单位','单价','金额','备注'],detail)}</details></td><td>${fcMoney(inv.amount)}</td><td>${files.map(file=>`<button class="btn small" data-action="fc-doc-view" data-id="${esc(file.path)}">${esc(file.name||'原单')}</button>`).join('')||'—'}</td></tr>`}).join('');
     const purchasePanel=panel('本户采购与外协成本','板材、五金按单采购，不关联公共库存；外协与其他费用也在这里逐单登记。扫描后逐行核对，保存后计入本户分类成本。',`${['owner','factory'].includes(role)?`<div class="fc-inline-actions"><button class="btn" data-action="fc-purchase-new" data-kind="板材单" data-id="${item.id}">＋ 板材采购单</button><button class="btn" data-action="fc-purchase-new" data-kind="五金单" data-id="${item.id}">＋ 五金采购单</button><button class="btn" data-action="fc-purchase-new" data-kind="外协单" data-id="${item.id}">＋ 外协单</button><button class="btn" data-action="fc-purchase-new" data-kind="其他单" data-id="${item.id}">＋ 其他费用</button></div>`:''}${fcTable(['类别','供应商 / 单号','日期','明细','本单金额','原单附件'],invoiceRows)}`);
     const material=panel(canOwner?'本户材料成本':'本户材料采购','本户订单材料按采购单登记，不从公共库存领用或退料；工资归为工厂公共人工，不分摊到单户。',`${canOwner?`<div class="fc-cost-splits">${costs}</div>`:''}${['owner','factory'].includes(role)?`${purchasePanel}${canOwner?`<div class="fc-inline-actions"><button class="btn" data-action="fc-cost-entry-refresh">刷新成本流水</button></div>${fc.costEntriesLoading?'<p class="empty">流水加载中…</p>':fc.costEntriesError?`<div class="fc-notice error">${esc(fc.costEntriesError)}</div>`:fcTable(['日期','类别','来源','金额','说明','更正'],costRows)}`:''}`:''}`);
-    const cashReceived=cashEntries.filter(x=>x.kind==='收款').reduce((n,x)=>n+Number(x.amount||0),0),cashPaid=cashEntries.filter(x=>x.kind==='付款').reduce((n,x)=>n+Number(x.amount||0),0);const payments=canOwner?panel('收款与付款','按款项阶段和收款次数登记；订单收款额用于工厂订单应收核对。',fcTable(['日期','类型','阶段 / 次数','金额','方式','往来方','说明'],cashEntries.map(x=>`<tr><td>${fcDateVal(x.date)}</td><td>${esc(x.kind)}</td><td>${x.kind==='收款'?`${esc(x.stage||'其他')} · 第 ${Number(x.sequence||1)} 次`:'—'}</td><td>${fcMoney(x.amount)}</td><td>${esc(x.method||'')}</td><td>${esc(x.counterparty||'')}</td><td>${esc(x.note||'')}</td></tr>`).join(''))+`<div class="fc-inline-actions"><button class="btn" data-action="fc-cash-new" data-id="${item.id}">＋ 登记收款 / 付款</button></div>`):panel('实际收款与付款','厂长可登记订单收款阶段和次数；金额只对老板显示。',`<p>已加载 ${cashEntries.length} 条登记记录。</p><button class="btn" data-action="fc-cash-new" data-id="${item.id}">＋ 登记收款 / 付款</button>`);
+    const cashReceived=cashEntries.filter(x=>x.kind==='收款').reduce((n,x)=>n+Number(x.amount||0),0),cashPaid=cashEntries.filter(x=>x.kind==='付款').reduce((n,x)=>n+Number(x.amount||0),0);const payments=canOwner?panel('收款与付款','订单采购成本与实际付款分开登记；每笔收付可附上凭证，凭证仅老板可查看。',fcTable(['日期','类型','阶段 / 次数','金额','方式','往来方','凭证','说明'],cashEntries.map(x=>`<tr><td>${fcDateVal(x.date)}</td><td><span class="fc-cash-kind ${x.kind==='收款'?'received':'paid'}">${esc(x.kind)}</span></td><td>${x.kind==='收款'?`${esc(x.stage||'其他')} · 第 ${Number(x.sequence||1)} 次`:'—'}</td><td><strong class="fc-cash-amount">${fcMoney(x.amount)}</strong></td><td>${esc(x.method||'')}</td><td>${esc(x.counterparty||'')}</td><td>${fcProofButtons(x.proof_documents)}</td><td>${esc(x.note||'')}</td></tr>`).join(''))+`<div class="fc-inline-actions"><button class="btn" data-action="fc-cash-new" data-id="${item.id}">＋ 登记收款 / 付款</button></div>`):panel('实际收款与付款','厂长可登记订单收款阶段和次数；金额只对老板显示。',`<p>已加载 ${cashEntries.length} 条登记记录。</p><button class="btn" data-action="fc-cash-new" data-id="${item.id}">＋ 登记收款 / 付款</button>`);
     const outsourcing=panel('外购 / 外协成本','登记向外部供应商采购或加工的金额，保存后计入本户成本。',fcTable(canOwner?['日期','项目 / 供应商','金额','说明']:['日期','项目 / 供应商','说明'],outsourcingRows.map(x=>`<tr><td>${fcDateVal(x.planned_date||x.created_at)}</td><td>${esc(x.process)} · ${esc(x.supplier||'')}</td>${canOwner?`<td>${x.actual_cost==null?'—':fcMoney(x.actual_cost)}</td>`:''}<td>${esc(x.note||'')}</td></tr>`).join(''))+`<div class="fc-inline-actions"><button class="btn" data-action="fc-outsourcing-new" data-id="${item.id}">＋ 登记外购 / 外协成本</button></div>`)+
       panel('特殊需求与现场备注','本户接单说明、沟通和现场情况追加留痕。',`<p>${esc(item.note||'暂无云端接单说明')}</p>${fcTable(['类型','记录','时间'],siteNotes.map(x=>`<tr><td>${esc(x.note_kind)}</td><td>${esc(x.content)}</td><td>${fcDateVal(x.created_at)}</td></tr>`).join(''))}<div class="fc-inline-actions"><button class="btn" data-action="fc-site-note-new" data-id="${item.id}">＋ 添加现场备注</button></div>`);
      const summary=canOwner?`<div class="cards fc-detail-metrics">${metric('订单约定金额',fcMoney(item.order_amount),'订单快照','￥')}${metric('已收款 / 剩余应收',`${fcMoney(cashReceived)} / ${fcMoney(Math.max(0,Number(item.order_amount||0)-cashReceived))}`,'付款累计 '+fcMoney(cashPaid),'￥')}${metric('已录订单直接成本',fcMoney(item.total_cost),'板材（含封边）/ 五金 / 外协 / 其他','▧')}${metric('当前订单毛利',fcMoney(item.gross_profit),item.gross_margin==null?'毛利率待有接单额后计算':`毛利率 ${(Number(item.gross_margin)*100).toFixed(2)}%`,'↗')}</div>`:`<div class="cards fc-detail-metrics">${metric('订单编号',esc(item.order_no),'生产任务','▧')}${metric('业务来源',esc(item.business_source||'—'),'云端档案','⌂')}${metric('当前工序',esc(item.current_process||'未排产'),'生产进度','◷')}${metric('订单金额',fcMoney(item.order_amount),`交期 ${fcDateVal(item.delivery_date)||'未设置'}`,'￥')}</div>`;
@@ -6573,7 +7211,7 @@ window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
       panel('员工月度汇总',`${active.length} 人`,fcTable(['员工',owner?'计薪方式 / 标准':'岗位','出勤','加班','请假 / 旷工',...(owner?['应付工资','归集']:[])],monthRows))+
       panel('每日考勤明细',`${byDate.size} 天 · 点日期展开人员和未登记名单`,daily||'<p class="empty">本月暂无考勤记录</p>');
   }
-  function fcPayroll(){if(!fcIsOwner())return fcDenied();if(!fc.loaded&&!fc.loading){queueMicrotask(()=>fcLoad());return fcHead('工厂 · 工资','人员与工资','正在加载…')+fcBanner();}const emp=fc.employees.map(e=>`<tr><td>${esc(e.employee_name)}</td><td>${esc(e.job)}</td><td>${esc(e.pay_method)}</td><td>${fcMoney(e.pay_rate)}${e.pay_method==='月薪'?'/月':e.pay_method==='日薪'?'/日':'/件'}</td><td>${esc(e.employment_status)}</td></tr>`).join(''),pay=fc.payroll.map(x=>`<tr><td>${fcDateVal(x.payroll_month)}</td><td>${esc(x.employee_name)}</td><td>${esc(x.pay_method)}</td><td>${fcMoney(x.amount)}</td><td>${esc(x.source)}</td></tr>`).join(''),total=fc.payroll.reduce((n,x)=>n+Number(x.amount||0),0);return fcHead('工厂 · 工资','人员与工资','按月薪、日薪、计件规则核算；全部归入工厂公共月人工，不计入单户订单成本。',`<button class="btn" data-action="fc-refresh">刷新</button><button class="btn" data-action="fc-employee-new">＋ 新增员工</button><button class="btn primary" data-action="fc-payroll-close">核算本月工资</button>`)+fcBanner()+`<div class="fc-notice">月薪按月薪标准、日薪按日薪×出勤天数、计件按单价×数量，全部计入工厂当月固定人工；不登记到单户订单成本。加班时长只记录，不自动计薪。</div>`+panel('员工与计薪规则',`${fc.employees.length} 人`,fcTable(['姓名','岗位','计薪方式','标准','状态'],emp))+`<div class="fc-payroll-total"><span>${fc.attendanceMonth||fcMonth()} 月工资合计</span><b>${fcMoney(total)}</b></div>`+panel('月度工资汇总','按月追加；金额更正通过负向调整留痕。',fcTable(['月份','员工','计薪方式','金额','归集'],pay));}
+  function fcPayroll(){if(!fcIsOwner())return fcDenied();if(!fc.loaded&&!fc.loading){queueMicrotask(()=>fcLoad());return fcHead('工厂 · 工资','人员与工资','正在加载…')+fcBanner();}const month=fc.attendanceMonth||fcMonth(),emp=fc.employees.map(e=>`<tr><td>${esc(e.employee_name)}</td><td>${esc(e.job)}</td><td>${esc(e.pay_method)}</td><td>${fcMoney(e.pay_rate)}${e.pay_method==='月薪'?'/月':e.pay_method==='日薪'?'/日':'/件'}</td><td>${esc(e.employment_status)}</td></tr>`).join(''),payRows=fc.payroll.filter(x=>fcDateVal(x.payroll_month).slice(0,7)===month),extra=fc.fixed.filter(x=>fcDateVal(x.cost_month).slice(0,7)===month&&x.category==='固定人工'),pay=payRows.map(x=>{const target=fc.payrollTargets.find(y=>y.employee_name===x.employee_name&&fcDateVal(y.payroll_month).slice(0,7)===month);return `<tr><td>${fcDateVal(x.payroll_month)}</td><td>${esc(x.employee_name)}</td><td>${esc(x.pay_method)}</td><td>${fcMoney(x.amount)}</td><td>${esc(x.source)}${target?` · <button class="btn small" data-action="fc-payroll-adjust" data-id="${target.snapshot_id}">增减项</button>`:''}</td></tr>`}).join('')+extra.map(x=>`<tr class="fc-payroll-extra-row"><td>${month}</td><td>${esc(x.item||'特殊人工')}</td><td>特殊人工</td><td>${fcMoney(x.amount)}</td><td>${esc(x.note||'已计入工厂公共费用')}</td></tr>`).join(''),autoTotal=payRows.reduce((n,x)=>n+Number(x.amount||0),0),extraTotal=extra.reduce((n,x)=>n+Number(x.amount||0),0),total=autoTotal+extraTotal;return fcHead('工厂 · 工资','人员与工资','按月薪、日薪、计件规则核算；全部归入工厂公共月人工，不计入单户订单成本。',`<button class="btn" data-action="fc-refresh">刷新</button><button class="btn" data-action="fc-employee-new">＋ 新增员工</button><button class="btn" data-action="fc-payroll-extra">＋ 登记特殊人工</button><button class="btn primary" data-action="fc-payroll-close">核算本月工资</button>`)+fcBanner()+`<div class="fc-notice">月薪按月薪标准、日薪按出勤天数、计件按单价×数量；这些自动汇总和特殊人工都会计入月度净利润。月薪结算单可加正数或负数调整，特殊补贴等通过“登记特殊人工”单独留痕。</div>`+panel('员工与计薪规则',`${fc.employees.length} 人`,fcTable(['姓名','岗位','计薪方式','标准','状态'],emp))+`<div class="fc-payroll-total"><span>${month} 月人工合计 <small>自动工资 ${fcMoney(autoTotal)} · 特殊人工 ${fcMoney(extraTotal)}</small></span><b>${fcMoney(total)}</b></div>`+panel(`${month} 月度工资汇总`,'工资增减项与特殊人工均保留记录；净利润页按月汇总固定人工。',fcTable(['月份','员工 / 项目','计薪方式','金额','归集 / 操作'],pay));}
   function fcFinance(){
     if(!fcIsOwner())return fcDenied();if(!fc.loaded&&!fc.loading){queueMicrotask(()=>fcLoad());return fcHead('工厂 · 财务','工厂收入与支出','正在加载…')+fcBanner();}
     const month=fc.financeMonth||fcMonth(),account=fc.accounts.find(x=>x.business_line==='factory'&&x.period_kind==='month'&&fcDateVal(x.period).slice(0,7)===month),fixed=fc.fixed.filter(x=>['工厂','工厂生产','factory'].includes(x.ownership)&&fcDateVal(x.cost_month).slice(0,7)===month),payroll=fc.payroll.filter(x=>fcDateVal(x.payroll_month).slice(0,7)===month),manualFixed=fixed.reduce((n,x)=>n+Number(x.amount||0),0),payrollTotal=payroll.reduce((n,x)=>n+Number(x.amount||0),0),completed=fc.orders.filter(o=>o.completed_at),active=fc.orders.filter(o=>!o.completed_at);
@@ -6581,33 +7219,36 @@ window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
     const monthCash=fc.cashEntries.filter(x=>fcDateVal(x.entry_date).slice(0,7)===month),received=monthCash.filter(x=>x.entry_kind==='收款').reduce((n,x)=>n+Number(x.amount||0),0),paid=monthCash.filter(x=>x.entry_kind==='付款').reduce((n,x)=>n+Number(x.amount||0),0),allReceivedByOrder=new Map();
     for(const entry of fc.cashEntries)if(entry.entry_kind==='收款')allReceivedByOrder.set(entry.order_id,(allReceivedByOrder.get(entry.order_id)||0)+Number(entry.amount||0));
     const receivable=fc.orders.reduce((n,o)=>n+Math.max(0,Number(o.order_amount||0)-(allReceivedByOrder.get(o.id)||0)),0);
-    const cashRows=monthCash.map(x=>`<tr><td>${fcDateVal(x.entry_date)}</td><td>${esc(x.entry_kind)}</td><td>${x.entry_kind==='收款'?`${esc(x.payment_stage||'其他')} · 第 ${Number(x.receipt_sequence||1)} 次`:'—'}</td><td>${esc(x.customer_project)}<small class="cell-sub">${esc(x.order_no)}</small></td><td>${esc(x.method||'—')}</td><td>${esc(x.counterparty||'—')}</td><td>${fcMoney(x.amount)}</td><td>${esc(x.note||'')}</td></tr>`).join('');
-    const receivableRows=fc.orders.map(o=>{const orderReceived=allReceivedByOrder.get(o.id)||0,due=Math.max(0,Number(o.order_amount||0)-orderReceived);return `<tr><td>${esc(o.customer_project)}<small class="cell-sub">${esc(o.order_no)}</small></td><td>${fcMoney(o.order_amount)}</td><td>${fcMoney(orderReceived)}</td><td>${fcMoney(due)}</td><td><button class="btn small" data-action="fc-cash-new" data-id="${o.id}">登记收款 / 付款</button></td></tr>`}).join('');
-    return fcHead('FACTORY FINANCE · 工厂独立账','工厂收入与支出 / 月年净利','按完工月核算订单，在制投入单列。',`<button class="btn" data-action="fc-refresh">刷新</button><button class="btn primary" data-action="fc-fixed-new">登记公共费用</button>`)+fcBanner()+
+    const cashRows=monthCash.map(x=>`<tr class="fc-cash-ledger-row"><td>${fcDateVal(x.entry_date)}</td><td><span class="fc-cash-kind ${x.entry_kind==='收款'?'received':'paid'}">${esc(x.entry_kind)}</span></td><td><strong>${x.entry_kind==='收款'?`${esc(x.payment_stage||'其他')} · 第 ${Number(x.receipt_sequence||1)} 次`:'实际付款'}</strong></td><td><b>${esc(x.customer_project)}</b><small class="cell-sub">${esc(x.order_no)}</small></td><td>${esc(x.method||'—')}</td><td>${esc(x.counterparty||'—')}</td><td><strong class="fc-cash-amount">${fcMoney(x.amount)}</strong></td><td>${fcProofButtons(x.proof_documents)}</td><td>${esc(x.note||'')}</td></tr>`).join('');
+    const receivableRows=fc.orders.map(o=>{const orderReceived=allReceivedByOrder.get(o.id)||0,due=Math.max(0,Number(o.order_amount||0)-orderReceived),isDone=!!o.completed_at;return `<tr class="${isDone&&due>0?'fc-receivable-due':''}"><td>${esc(o.customer_project)}<small class="cell-sub">${esc(o.order_no)}</small></td><td>${fcMoney(o.order_amount)}</td><td>${fcMoney(orderReceived)}</td><td>${due>0?`<strong class="${isDone?'fc-due-alert':'fc-receivable-amount'}">${fcMoney(due)}${isDone?' · 尾款待收':''}</strong>`:'<span class="fc-paid-badge">已收清</span>'}</td><td><button class="btn small" data-action="fc-cash-new" data-id="${o.id}">登记收款 / 付款</button></td></tr>`}).join('');
+    return fcHead('FACTORY FINANCE · 工厂独立账','工厂收入与支出 / 月年净利','利润按完工订单成本和公共费用核算；订单收款、采购付款在现金流水单列。',`<button class="btn" data-action="fc-refresh">刷新</button><button class="btn primary" data-action="fc-fixed-new">登记公共费用</button>`)+fcBanner()+
       `<div class="fc-toolbar"><label>账目月份<input class="field" type="month" value="${month}" data-fc-finance-month></label><div class="fc-exports"><button class="btn" data-action="fc-export" data-kind="finance">导出本月账目</button><button class="btn" data-action="fc-export" data-kind="backup">导出工厂数据备份</button></div></div>`+
       `<div class="cards">${metric('本月工厂毛利',fcMoney(account?.gross_profit),'本月完工订单','￥')}${metric('本月工厂固定成本',fcMoney(account?.fixed_cost),'包含已结算固定月薪','￥')}${metric('本月工厂净利',fcMoney(account?.net_profit),'数据库独立工厂核算','↗')}${metric('在制累计投入',fcMoney(active.reduce((n,o)=>n+Number(o.total_cost||0),0)),'不计入本月净利','◷')}</div>`+
-      panel('订单收入、成本与毛利','约定金额与直接成本来自订单云端台账。',fcTable(['客户 / 订单','约定金额','直接成本','当前毛利','毛利率','完工日期'],rows(fc.orders)))+
+      panel('订单收入、成本与毛利','显示订单毛利口径；登记收款不会直接改写毛利。板材、五金采购成本也不代表供应商已收款。',fcTable(['客户 / 订单','约定金额','直接成本','当前毛利','毛利率','完工日期'],rows(fc.orders)))+
       panel('工厂月净利',yjAccountNotice,yjAccountTable(fc.accounts,'factory'))+panel('工厂年净利','按完工月份汇总。',yjAccountTable(fc.accounts,'factory','year'))+
       panel('在制订单',`${active.length} 单 · 尚未结转`,fcTable(['客户 / 订单','约定金额','已投入成本','毛利参考','毛利率','状态'],rows(active)))+
       panel('工厂公共费用与固定人工','固定人工在这里按月汇总；员工逐人明细保留在人员与工资页面。公共费用按本月列示。',`<div class="fc-cost-splits"><span>本月固定人工合计：${fcMoney(payrollTotal)}</span><span>手动登记公共费用：${fcMoney(manualFixed)}</span><span>数据库本月固定成本：${fcMoney(account?.fixed_cost)}</span></div>`+fcTable(['月份','类别','项目','金额','备注'],`<tr><td>${month}</td><td>固定人工</td><td>本月合计</td><td>${fcMoney(payrollTotal)}</td><td>人员与工资页可查看员工明细</td></tr>`+fixed.map(x=>`<tr><td>${fcDateVal(x.cost_month).slice(0,7)}</td><td>${esc(x.category)}</td><td>${esc(x.item||'工厂公共费用')}</td><td>${fcMoney(x.amount)}</td><td>${esc(x.note||'')}</td></tr>`).join('')))+
       panel('经营提醒','依据现有订单和库存生成。',`<p>${active.length} 户在制 · ${fc.inventory.filter(x=>Number(x.quantity_on_hand)<=Number(x.safety_stock)).length} 种材料需补货</p>`)+
-      panel('实际收款、付款与应收','工厂订单现金流水按收款阶段和次数登记；不自动改写其他业务模块的客户账。',`<div class="cards fc-cash-metrics">${metric('本月实际收款',fcMoney(received),`${monthCash.filter(x=>x.entry_kind==='收款').length} 笔`,'↓')}${metric('本月实际付款',fcMoney(paid),`${monthCash.filter(x=>x.entry_kind==='付款').length} 笔`,'↑')}${metric('本月净现金流',fcMoney(received-paid),'实收 − 实付','￥')}${metric('订单应收余额',fcMoney(receivable),'约定金额 − 累计实收','◷')}</div><div class="fc-cash-actions"><button class="btn primary" data-action="fc-cash-new">登记收款 / 付款</button></div>`+panel('订单应收余额','按工单约定金额减去累计收款计算。',fcTable(['客户 / 订单','约定金额','累计实收','剩余应收','操作'],receivableRows))+panel(`${month} 月现金流水`,`${monthCash.length} 笔`,fcTable(['日期','类型','阶段 / 次数','客户 / 订单','方式','往来方','金额','说明'],cashRows)));
+      panel('实际收款、付款与应收','收款凭证仅老板可查。板材 / 五金采购单进入订单直接成本；实际付给供应商后，再单独登记付款。',`<div class="cards fc-cash-metrics">${metric('本月实际收款',fcMoney(received),`${monthCash.filter(x=>x.entry_kind==='收款').length} 笔`,'↓')}${metric('本月实际付款',fcMoney(paid),`${monthCash.filter(x=>x.entry_kind==='付款').length} 笔`,'↑')}${metric('本月净现金流',fcMoney(received-paid),'实收 − 实付','￥')}${metric('订单应收余额',fcMoney(receivable),'约定金额 − 累计实收','◷')}</div><div class="fc-cash-actions"><button class="btn primary" data-action="fc-cash-new">登记收款 / 付款</button></div>`+panel('订单应收余额','按工单约定金额减去累计收款计算。',fcTable(['客户 / 订单','约定金额','累计实收','剩余应收','操作'],receivableRows))+panel(`${month} 月现金流水`,`${monthCash.length} 笔`,fcTable(['日期','类型','阶段 / 付款','客户 / 订单','方式','往来方','金额','凭证','说明'],cashRows)));
   }
   function fcDenied(){return fcHead('工厂权限','当前账号无权访问','此页面仅对授权工厂岗位开放。',`<button class="btn" data-page="home">返回工作台</button>`)}
   function fcForm(id,title,body){openModal(title,`<form id="${id}"><div class="modal-body"><div class="form-grid">${body}</div></div><div class="modal-foot"><button type="button" class="btn" data-action="close-modal">取消</button><button class="btn primary" type="submit">保存</button></div></form>`);if(id==='fcConfigForm')$('#modalRoot .modal')?.classList.add('fc-config-modal')}
   const fcField=(name,label,type='text',value='',req=false,step='')=>`<label>${label}<input class="field" name="${name}" type="${type}" value="${esc(value)}" ${req?'required':''} ${type==='number'?`min="0" step="${step||'0.01'}"`:''}></label>`;
   const fcSelect=(name,label,options)=>`<label>${label}<select class="field" name="${name}">${options.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')}</select></label>`;
-  const fcBulkInventoryRow=options=>`<div class="fc-bulk-inventory-row"><label>选择物资<select class="field" name="material_id" required><option value="">选择物资档案</option>${options}</select></label>${fcField('quantity','入库数量','number','',true,'0.001')}${fcField('unit_price','采购单价','number','0',false,'0.0001')}<label>行备注<input class="field" name="line_note" placeholder="规格 / 颜色 / 品牌"></label><button type="button" class="btn small" data-action="fc-bulk-row-remove">移除</button></div>`;
+  const fcBulkInventoryRow=options=>`<div class="fc-bulk-inventory-row"><label>物资档案<select class="field" name="material_id" required><option value="">选择物资档案</option>${options}</select></label><label class="fc-bulk-unmatched" hidden>未匹配物资名称<input class="field" name="unmatched_name" placeholder="识别名称，可手动修正"></label>${fcField('quantity','入库数量','number','',true,'0.001')}${fcField('unit_price','采购单价','number','0',false,'0.0001')}<label>行备注<input class="field" name="line_note" placeholder="规格 / 颜色 / 品牌"></label><button type="button" class="btn small fc-bulk-create-material" data-action="fc-bulk-create-material" hidden>新建物资档案</button><button type="button" class="btn small" data-action="fc-bulk-row-remove">移除</button></div>`;
+  function fcBulkAppendRow(container,options,line={}){container.insertAdjacentHTML('beforeend',fcBulkInventoryRow(options));const row=container.lastElementChild;if(!row)return;row.querySelector('[name="material_id"]').value=line.material_id||'';row.querySelector('[name="quantity"]').value=line.quantity??'';row.querySelector('[name="unit_price"]').value=line.unit_price??'0';row.querySelector('[name="line_note"]').value=line.line_note||'';const unmatched=row.querySelector('.fc-bulk-unmatched'),name=row.querySelector('[name="unmatched_name"]'),create=row.querySelector('[data-action="fc-bulk-create-material"]');if(line.unmatched_name){name.value=line.unmatched_name;unmatched.hidden=false;create.hidden=false;}}
+  function fcBulkCapture(form,targetRow){return {movement_date:form.elements.movement_date.value,supplier_source:form.elements.supplier_source.value,handled_by:form.elements.handled_by.value,note:form.elements.note.value,targetIndex:[...form.querySelectorAll('.fc-bulk-inventory-row')].indexOf(targetRow),rows:[...form.querySelectorAll('.fc-bulk-inventory-row')].map(row=>({material_id:row.querySelector('[name="material_id"]').value,unmatched_name:row.querySelector('[name="unmatched_name"]').value,quantity:row.querySelector('[name="quantity"]').value,unit_price:row.querySelector('[name="unit_price"]').value,line_note:row.querySelector('[name="line_note"]').value}))};}
+  function fcBulkRestore(draft,createdName){fcOpenForm('fc-bulk-in-new');const form=document.getElementById('fcBulkInventoryForm');if(!form)return;for(const key of ['movement_date','supplier_source','handled_by','note'])if(draft[key]!=null)form.elements[key].value=draft[key];const container=form.querySelector('#fcBulkInventoryRows'),options=fc.inventory.filter(x=>x.cost_category==='五金'||x.category==='五金'||x.category==='特殊物资').map(x=>`<option value="${x.id}">${esc(x.material_name)} · ${esc(x.spec||x.unit)}</option>`).join('');container.innerHTML='';draft.rows.forEach((row,index)=>{if(index===draft.targetIndex&&createdName){const material=fc.inventory.find(x=>x.material_name===createdName);if(material)row={...row,material_id:material.id,unmatched_name:''};}fcBulkAppendRow(container,options,row);});fc.bulkInventoryDraft=null;}
   function fcPurchaseFileKey(file){return `${file.name}:${file.size}:${file.lastModified}`;}
   function fcPurchaseAttachFiles(invoice,files){const seen=new Set((invoice.files||[]).map(fcPurchaseFileKey));let added=0;for(const file of [...(files||[])]){const key=fcPurchaseFileKey(file);if(seen.has(key))continue;seen.add(key);invoice.files.push(file);added++;}return {added,duplicate:[...(files||[])].length-added};}
   function fcPurchaseBlankInvoice(kind='板材单'){return {id:crypto.randomUUID(),kind,supplier:'',bill_no:'',bill_date:fcToday(),freight:'0',discount:'0',declared_total:'',note:'',files:[],lines:[{product:'',spec:'',unit:'张',quantity:'',unit_price:'',remark:''}],scanned:new Set(),uploaded:new Map(),previews:new Map(),requestId:fcReq(),paid:false,payment_method:'银行转账',saved:false,reviewed:false,readState:'待上传原单',rawText:'',manualTotalMode:false,manualPaidTotal:''};}
   function fcPurchaseNew(orderId,initialKind='板材单'){if(!['owner','factory'].includes(role))return;const first=fcPurchaseBlankInvoice(initialKind);fc.purchaseDraft={orderId,activeInvoiceId:first.id,invoices:[first],grouping:'separate',busy:false};openModal('本户采购成本 · 扫描并核对',`<form id="fcPurchaseForm" data-order-id="${esc(orderId)}"><div class="modal-body"><div class="fc-purchase-workbench"><aside class="fc-purchase-queue"><h3>采购单列表</h3><label>上传板材 / 五金 / 外协单<input class="field" type="file" id="fcPurchaseFiles" accept="image/*,application/pdf,.xls,.xlsx,.csv,.tsv,.doc,.docx" multiple><small>图片、PDF、表格、Word均可归档；可分多次添加。</small></label><label>图片方向<select class="field" id="fcPurchaseRotation"><option value="0">正常</option><option value="90">顺时针 90°</option><option value="180">旋转 180°</option><option value="270">逆时针 90°</option></select></label><label>文件组织<select class="field" id="fcPurchaseGrouping"><option value="separate">每个文件是一张单</option><option value="pages">所选文件是同一张单的多页</option></select></label><div class="fc-inline-actions"><button type="button" class="btn" data-action="fc-purchase-read">扫描所选单据</button><button type="button" class="btn" data-action="fc-purchase-add-invoice">＋ 添加另一张单</button></div><div id="fcPurchaseQueue"></div><div id="fcPurchaseReadStatus" class="fc-purchase-status" aria-live="polite">识别后逐行核对数量、单价和金额；不能确认的字段请对照原件修改。</div></aside><section id="fcPurchaseContent" class="fc-purchase-content"><p>加载采购单核对表…</p></section></div></div><footer class="modal-foot fc-purchase-footer"><button type="button" class="btn" data-action="close-modal">关闭</button><button type="submit" class="btn" data-scope="current">保存当前成本单</button><button type="submit" class="btn primary" data-scope="all">保存全部已核对单</button></footer></form>`);$('#modalRoot .modal')?.classList.add('fc-purchase-modal');fcPurchaseRenderQueue();}
   function fcPurchaseMaterials(kind){const source=fcIsOwner()?fc.valuation:fc.inventory;return source.filter(x=>kind==='五金单'?x.category==='五金':['板材','辅料'].includes(x.category));}
-   function fcPurchaseRow(line={},index=0,kind='板材单'){const financial=`<td data-label="单价"><input class="field" data-pf="unit_price" type="number" min="0" step="0.0001" value="${esc(line.unit_price??'')}"></td><td data-label="行金额"><output data-pf-total>${fcMoney((Number(line.quantity||0)*Number(line.unit_price||0)).toFixed(2))}</output></td>`;return `<tr data-fc-purchase-line data-line-id="${esc(line.id||index)}"><td data-label="采购品名"><input class="field" data-pf="product" value="${esc(line.product||'')}" placeholder="识别品名，可手动修正"></td><td data-label="规格"><input class="field" data-pf="spec" value="${esc(line.spec||'')}" placeholder="规格 / 型号"></td><td data-label="单位"><input class="field" data-pf="unit" value="${esc(line.unit||'')}" placeholder="单位"></td><td data-label="数量"><input class="field" data-pf="quantity" type="number" min="0.001" step="0.001" value="${esc(line.quantity??'')}"></td>${financial}<td data-label="备注"><input class="field" data-pf="remark" value="${esc(line.remark||'')}" placeholder="品牌 / 型号 / 备注"></td><td data-label="操作"><button type="button" class="btn small" data-action="fc-purchase-remove">移除</button></td></tr>`;}
+   function fcPurchaseRow(line={},index=0,kind='板材单'){return `<article class="fc-purchase-line-card" data-fc-purchase-line data-line-id="${esc(line.id||index)}"><label>采购品名<input class="field" data-pf="product" value="${esc(line.product||'')}" placeholder="识别品名，可手动修正"></label><label>规格 / 型号<input class="field" data-pf="spec" value="${esc(line.spec||'')}" placeholder="按原单核对"></label><label>单位<input class="field" data-pf="unit" value="${esc(line.unit||'')}" placeholder="张、个、套"></label><label>数量<input class="field" data-pf="quantity" type="number" min="0.001" step="0.001" value="${esc(line.quantity??'')}"></label><label>采购单价<input class="field" data-pf="unit_price" type="number" min="0" step="0.0001" value="${esc(line.unit_price??'')}"></label><div class="fc-purchase-line-total"><small>行金额试算</small><output data-pf-total>${fcMoney((Number(line.quantity||0)*Number(line.unit_price||0)).toFixed(2))}</output></div><label class="fc-purchase-line-remark">备注<input class="field" data-pf="remark" value="${esc(line.remark||'')}" placeholder="品牌 / 型号 / 颜色"></label><button type="button" class="btn small fc-purchase-line-remove" data-action="fc-purchase-remove">移除</button></article>`;}
   function fcPurchaseActive(){const d=fc.purchaseDraft;return d?.invoices.find(x=>x.id===d.activeInvoiceId)||d?.invoices[0]||null;}
   function fcPurchasePreview(invoice,file){if(!['owner','factory'].includes(role)||!file.type?.startsWith('image/'))return '';invoice.previews||=new Map();if(!invoice.previews.has(file))invoice.previews.set(file,URL.createObjectURL(file));return `<figure class="fc-purchase-preview"><img src="${invoice.previews.get(file)}" alt="${esc(file.name)}" title="双击放大核对"><figcaption>${esc(file.name)} · 双击放大</figcaption></figure>`;}
   function fcPurchaseRelease(draft){for(const invoice of draft?.invoices||[])for(const url of invoice.previews?.values()||[])URL.revokeObjectURL(url);}
-   function fcPurchaseRenderQueue(){const draft=fc.purchaseDraft,queue=document.getElementById('fcPurchaseQueue'),content=document.getElementById('fcPurchaseContent');if(!draft||!queue||!content)return;queue.innerHTML=draft.invoices.map((invoice,index)=>`<div class="fc-purchase-queue-item ${invoice.id===draft.activeInvoiceId?'active':''}"><button type="button" data-action="fc-purchase-switch" data-id="${invoice.id}"><b>${index+1}. ${esc(invoice.bill_no||invoice.files?.[0]?.name||invoice.kind)}</b><small>${esc(invoice.readState||'待核对')} · ${invoice.files?.length||0} 页 · ${invoice.lines?.filter(x=>x.product).length||0} 行${invoice.reviewed?' · 已核对':''}${invoice.saved?' · 已入账':''}</small></button>${invoice.saved?'':`<button type="button" class="btn small" data-action="fc-purchase-invoice-delete" data-id="${invoice.id}">删除</button>`}</div>`).join('')||'<p class="empty">暂无采购单</p>';const invoice=fcPurchaseActive();if(!invoice){content.innerHTML='<p class="empty">先添加采购单</p>';return;}const files=(invoice.files||[]).map((file,index)=>`<div class="fc-purchase-file"><span>${esc(file.name)} · ${(file.size/1024/1024).toFixed(1)} MB</span><button type="button" class="btn small" data-action="fc-purchase-file-remove" data-id="${index}">移除</button></div>${fcPurchasePreview(invoice,file)}`).join('')||'<p class="fc-muted">请在左侧选择一张或多张原单。</p>';const canSeeTotals=['owner','factory'].includes(role);const rows=(invoice.lines||[]).map((line,index)=>fcPurchaseRow(line,index,invoice.kind)).join('');content.innerHTML=`<div class="fc-purchase-heading"><div><small>本户采购成本 / ${invoice.id.slice(0,8)}</small><h3>采购单逐行核对</h3></div><span>${invoice.saved?'已入账':invoice.readState}</span></div><div class="fc-purchase-meta"><label>单据类型<select class="field" name="document_kind">${['板材单','五金单','外协单','其他单'].map(x=>`<option ${invoice.kind===x?'selected':''}>${x}</option>`).join('')}</select></label><label>供应商<input class="field" name="supplier" value="${esc(invoice.supplier)}"></label><label>单据号<input class="field" name="bill_no" value="${esc(invoice.bill_no)}" placeholder="可按纸单填写"></label><label>采购日期<input class="field" name="bill_date" type="date" value="${esc(invoice.bill_date)}" required></label>${canSeeTotals?`<label>运费 / 其他<input class="field" name="freight" type="number" min="0" step="0.01" value="${esc(invoice.freight)}"></label><label>优惠 / 折让<input class="field" name="discount" type="number" min="0" step="0.01" value="${esc(invoice.discount)}"></label><label>票面合计<input class="field" name="declared_total" type="number" min="0.01" step="0.01" value="${esc(invoice.declared_total)}" placeholder="用于云端校验"></label>`:''}</div><div class="fc-purchase-files">${files}</div><div class="fc-manual-total"><label><input type="checkbox" name="manual_total_mode" ${invoice.manualTotalMode?'checked':''}> 无法核对明细，按实际付款总额登记</label>${invoice.manualTotalMode?`<label>实际付款核对总额<input class="field" name="manual_paid_total" type="number" min="0.01" step="0.01" value="${esc(invoice.manualPaidTotal)}" required></label>`:''}</div><div id="fcPurchaseStatus" class="fc-purchase-status" aria-live="polite">${esc(invoice.error||invoice.readState||'逐行核对名称、规格、单位、数量和金额。')}</div><div class="fc-purchase-lines-wrap ${invoice.manualTotalMode?'hidden':''}"><table class="fc-purchase-lines owner"><thead><tr><th>采购品名</th><th>规格</th><th>单位</th><th>数量</th><th>采购单价</th><th>行金额试算</th><th>品牌 / 型号 / 备注</th><th></th></tr></thead><tbody id="fcPurchaseLines">${rows}</tbody></table></div><div class="fc-purchase-actions ${invoice.manualTotalMode?'hidden':''}"><button type="button" class="btn" data-action="fc-purchase-add">＋ 手动补一行</button><span>成本金额仅记入工厂本户成本账，不关联公共库存或客户收款；试算小计：<b id="fcPurchaseTotal">${fcMoney(invoice.lines.reduce((n,l)=>n+Number(l.quantity||0)*Number(l.unit_price||0),0))}</b></span></div><label class="fc-purchase-review"><input type="checkbox" name="reviewed" ${invoice.reviewed?'checked':''}> ${invoice.manualTotalMode?'我已核对实际付款总额':'我已核对本单明细和票面合计'}</label><label class="fc-purchase-note">说明<textarea class="field" name="note" rows="2">${esc(invoice.note)}</textarea></label><details><summary>识别文本 / 核对提示</summary><p>每个文件可单独作为一张单，也可选多页归入同一张单；识别结果需要对照原单核对。</p>${invoice.warnings?.length?`<p>${esc(invoice.warnings.join('；'))}</p>`:''}${invoice.rawText?`<pre>${esc(invoice.rawText)}</pre>`:''}</details>`;}
+   function fcPurchaseRenderQueue(){const draft=fc.purchaseDraft,queue=document.getElementById('fcPurchaseQueue'),content=document.getElementById('fcPurchaseContent');if(!draft||!queue||!content)return;queue.innerHTML=draft.invoices.map((invoice,index)=>`<div class="fc-purchase-queue-item ${invoice.id===draft.activeInvoiceId?'active':''}"><button type="button" data-action="fc-purchase-switch" data-id="${invoice.id}"><b>${index+1}. ${esc(invoice.bill_no||invoice.files?.[0]?.name||invoice.kind)}</b><small>${esc(invoice.readState||'待核对')} · ${invoice.files?.length||0} 页 · ${invoice.lines?.filter(x=>x.product).length||0} 行${Number.isFinite(invoice.confidence)?` · OCR ${invoice.confidence}%`:''}${invoice.reviewed?' · 已核对':''}${invoice.saved?' · 已入账':''}</small></button>${invoice.saved?'':`<button type="button" class="btn small" data-action="fc-purchase-invoice-delete" data-id="${invoice.id}">删除</button>`}</div>`).join('')||'<p class="empty">暂无采购单</p>';const invoice=fcPurchaseActive();if(!invoice){content.innerHTML='<p class="empty">先添加采购单</p>';return;}const files=(invoice.files||[]).map((file,index)=>`<div class="fc-purchase-file"><span>${esc(file.name)} · ${(file.size/1024/1024).toFixed(1)} MB</span><button type="button" class="btn small" data-action="fc-purchase-file-remove" data-id="${index}">移除</button></div>${fcPurchasePreview(invoice,file)}`).join('')||'<p class="fc-muted">请在左侧选择一张或多张原单。</p>';const canSeeTotals=['owner','factory'].includes(role);const rows=(invoice.lines||[]).map((line,index)=>fcPurchaseRow(line,index,invoice.kind)).join('');content.innerHTML=`<div class="fc-purchase-heading"><div><small>本户采购成本 / ${invoice.id.slice(0,8)}</small><h3>采购单逐行核对</h3></div><span>${invoice.saved?'已入账':invoice.readState}</span></div><div class="fc-purchase-meta"><label>单据类型<select class="field" name="document_kind">${['板材单','五金单','外协单','其他单'].map(x=>`<option ${invoice.kind===x?'selected':''}>${x}</option>`).join('')}</select></label><label>供应商<input class="field" name="supplier" value="${esc(invoice.supplier)}"></label><label>单据号<input class="field" name="bill_no" value="${esc(invoice.bill_no)}" placeholder="可按纸单填写"></label><label>采购日期<input class="field" name="bill_date" type="date" value="${esc(invoice.bill_date)}" required></label>${canSeeTotals?`<label>运费 / 其他<input class="field" name="freight" type="number" min="0" step="0.01" value="${esc(invoice.freight)}"></label><label>优惠 / 折让<input class="field" name="discount" type="number" min="0" step="0.01" value="${esc(invoice.discount)}"></label><label>票面合计<input class="field" name="declared_total" type="number" min="0.01" step="0.01" value="${esc(invoice.declared_total)}" placeholder="用于云端校验"></label>`:''}</div><div class="fc-purchase-files">${files}</div><div class="fc-manual-total"><label><input type="checkbox" name="manual_total_mode" ${invoice.manualTotalMode?'checked':''}> 无法核对明细，按实际付款总额登记</label>${invoice.manualTotalMode?`<label>实际付款核对总额<input class="field" name="manual_paid_total" type="number" min="0.01" step="0.01" value="${esc(invoice.manualPaidTotal)}" required></label>`:''}</div><div id="fcPurchaseStatus" class="fc-purchase-status" aria-live="polite">${esc(invoice.error||invoice.readState||'逐行核对名称、规格、单位、数量和金额。')}</div><div class="fc-purchase-lines-wrap ${invoice.manualTotalMode?'hidden':''}"><div id="fcPurchaseLines" class="fc-purchase-line-list">${rows}</div></div><div class="fc-purchase-actions ${invoice.manualTotalMode?'hidden':''}"><button type="button" class="btn" data-action="fc-purchase-add">＋ 手动补一行</button><span>成本金额仅记入工厂本户成本账，不关联公共库存或客户收款；试算小计：<b id="fcPurchaseTotal">${fcMoney(invoice.lines.reduce((n,l)=>n+Number(l.quantity||0)*Number(l.unit_price||0),0))}</b></span></div><label class="fc-purchase-review"><input type="checkbox" name="reviewed" ${invoice.reviewed?'checked':''}> ${invoice.manualTotalMode?'我已核对实际付款总额':'我已核对本单明细和票面合计'}</label><label class="fc-purchase-note">说明<textarea class="field" name="note" rows="2">${esc(invoice.note)}</textarea></label><details><summary>识别文本 / 核对提示</summary><p>每个文件可单独作为一张单，也可选多页归入同一张单；识别结果需要对照原单核对。</p>${invoice.warnings?.length?`<p>${esc(invoice.warnings.join('；'))}</p>`:''}${invoice.rawText?`<pre>${esc(invoice.rawText)}</pre>`:''}</details>`;}
   function fcPurchaseRenderStatus(message){const el=document.getElementById('fcPurchaseReadStatus');if(el&&message)el.textContent=message;}
   function fcPurchaseSyncForm(form){const invoice=fcPurchaseActive();if(!invoice||!form)return;const data=new FormData(form),prior=invoice.lines||[];for(const key of ['document_kind','supplier','bill_no','bill_date','freight','discount','declared_total','payment_method','note']){const map={document_kind:'kind',bill_date:'bill_date'};const target=map[key]||key;if(data.has(key))invoice[target]=data.get(key);}invoice.paid=data.get('paid')==='on';const wasManual=invoice.manualTotalMode,nextManual=data.get('manual_total_mode')==='on';if(nextManual&&!wasManual)invoice.manualDraftLines=prior;invoice.manualTotalMode=nextManual;invoice.manualPaidTotal=data.get('manual_paid_total')||invoice.manualPaidTotal||'';invoice.reviewed=data.get('reviewed')==='on';if(!invoice.manualTotalMode&&wasManual&&invoice.manualDraftLines)invoice.lines=invoice.manualDraftLines;if(invoice.manualTotalMode){const amount=Number(invoice.manualPaidTotal||0);invoice.freight='0';invoice.discount='0';invoice.declared_total=amount>0?amount:'';invoice.lines=[{product:'实际付款核对总额',spec:'',unit:'笔',quantity:amount>0?1:'',unit_price:amount>0?amount:'',remark:'无法核对明细，按实际付款总额手工登记'}];return;}invoice.lines=[...form.querySelectorAll('[data-fc-purchase-line]')].map((row,index)=>{const line=Object.fromEntries([...row.querySelectorAll('[data-pf]')].map(input=>[input.dataset.pf,input.type==='number'&&input.value!==''?Number(input.value):input.value]));if(!fcIsOwner()&&prior[index]?.unit_price!=null)line.unit_price=prior[index].unit_price;return line;});}
   function fcPurchaseReadLines(form){const invoice=fcPurchaseActive();if(form)fcPurchaseSyncForm(form);return invoice?.lines||[];}
@@ -6615,9 +7256,9 @@ window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
   function fcPurchaseValidate(invoice){if(!invoice.bill_date)return '请填写采购日期';if(invoice.manualTotalMode){if(!(Number(invoice.manualPaidTotal)>0))return '请输入实际付款核对总额';if(!invoice.reviewed)return '请先勾选已核对实际付款总额';return '';}if(!invoice.reviewed)return '请先勾选已核对单据';const lines=invoice.lines.filter(x=>String(x.product||'').trim());if(!lines.length)return '请至少填写一条品名明细';for(let i=0;i<lines.length;i++){const row=lines[i],qty=Number(row.quantity),price=Number(row.unit_price);if(!row.unit?.trim())return '第 '+(i+1)+' 行缺单位';if(!(qty>0))return '第 '+(i+1)+' 行缺数量或数量为 0';if(!Number.isFinite(price)||price<0||qty*price<=0)return '第 '+(i+1)+' 行缺有效金额，请核对数量和单价';}if(invoice.declared_total!==''&&invoice.declared_total!=null&&Math.abs(lines.reduce((sum,row)=>sum+Number(row.quantity)*Number(row.unit_price),0)+Number(invoice.freight||0)-Number(invoice.discount||0)-Number(invoice.declared_total))>.05)return '明细合计与原单合计不一致，请补齐漏行或核对其他费用';return '';}
   function fcPurchaseMime(file){const ext=file.name.split('.').pop().toLowerCase();return file.type||({jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif',pdf:'application/pdf',csv:'text/csv',tsv:'text/csv',txt:'text/plain',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',xls:'application/vnd.ms-excel',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',doc:'application/msword'})[ext]||'';}
    async function fcPurchaseRead(form){fcPurchaseSyncForm(form);const draft=fc.purchaseDraft,invoice=fcPurchaseActive(),grouping=document.getElementById('fcPurchaseGrouping')?.value||'separate';draft.grouping=grouping;if(!invoice?.files.length)throw Error('先在左侧选择采购单照片或 Excel');if(typeof rxExtract!=='function')throw Error('当前设备的单据识别服务不可用，请保留原件并手动录入、核对');if(grouping==='separate'&&invoice.files.length>1&&!invoice.lines.some(x=>x.product)&&!invoice.supplier&&!invoice.bill_no){const files=[...invoice.files],index=draft.invoices.indexOf(invoice),replacement=files.map(file=>{const next=fcPurchaseBlankInvoice(invoice.kind);next.files=[file];return next;});draft.invoices.splice(index,1,...replacement);draft.activeInvoiceId=replacement[0].id;fcPurchaseRenderQueue();for(let i=0;i<replacement.length;i++)await fcPurchaseReadInvoice(replacement[i],[replacement[i].files[0]],i+1,replacement.length);fcPurchaseRenderQueue();return;}await fcPurchaseReadInvoice(invoice,invoice.files.filter(file=>!invoice.scanned.has(fcPurchaseFileKey(file))),1,1);fcPurchaseRenderQueue();}
-  async function fcPurchaseReadInvoice(invoice,files,index,total){if(!files.length){invoice.readState='所选文件已识别';fcPurchaseRenderQueue();return;}const parsed=[];invoice.warnings=[];try{for(let i=0;i<files.length;i++){fcPurchaseRenderStatus(`正在读取 ${index}/${total} · ${i+1}/${files.length}：${files[i].name}`);const rotation=Number(document.getElementById('fcPurchaseRotation')?.value||0),result=await rxExtract(files[i],rotation,true);for(const row of result.rows||[])parsed.push({product:row.name||'',spec:row.spec||row.model||'',unit:row.unit||'',quantity:row.qty??'',unit_price:row.price??'',remark:[row.brand||'',row.color||'',row.remark||'',row.qtyDerived?'数量根据金额推算，请核对':'',row.amountDerived?'金额根据数量推算，请核对':''].filter(Boolean).join('；')});invoice.rawText+=(result.text||'')+'\n';invoice.warnings.push(...(result.warnings||[]));if(result.meta){invoice.supplier||=result.meta.supplier||'';invoice.bill_no||=result.meta.billNo||'';if(result.meta.date)invoice.bill_date=result.meta.date;if(result.meta.declaredTotal!=null)invoice.declared_total=result.meta.declaredTotal;if(result.meta.otherFee!=null)invoice.freight=result.meta.otherFee;if(result.meta.discount!=null)invoice.discount=result.meta.discount;}invoice.scanned.add(fcPurchaseFileKey(files[i]));}invoice.lines=ANJUWorkflowRestoration.mergeInvoiceScanLines(invoice.lines,parsed);invoice.readState=parsed.length?`已识别 ${parsed.length} 行，待人工核对`:'未识别到明细，可旋转图片重试或手工补录';invoice.error='';}catch(error){invoice.error=fcFail(error);invoice.readState='识别失败，可手动补录';}finally{fcPurchaseRenderStatus(invoice.error?`识别失败：${invoice.error}。原图仍在队列，可手工补齐。`:invoice.warnings?.length?`${invoice.readState}；${invoice.warnings.join('；')}`:invoice.readState);fcPurchaseRenderQueue();}}
-  async function fcPurchaseUpload(invoice){const client=fcClient();if(!client)throw Error('请先登录云端账号');invoice.uploaded||=new Map();const docs=[];for(let i=0;i<invoice.files.length;i++){const file=invoice.files[i];if(file.size>31457280)throw Error(`${file.name} 超过 30 MB`);const mime=fcPurchaseMime(file);if(!['image/jpeg','image/png','image/webp','image/gif','application/pdf','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/msword'].includes(mime))throw Error(`${file.name} 文件类型不受支持`);const key=fcPurchaseFileKey(file);let path=invoice.uploaded.get(key);if(!path){const folder=ANJUWorkflowRestoration.documentStorageFolder(invoice.kind);path=`factory/${ANJUWorkflowRestoration.safeStorageSegment(fc.purchaseDraft.orderId)}/${folder}/${ANJUWorkflowRestoration.safeStorageSegment(invoice.bill_date)}/${crypto.randomUUID()}-${ANJUWorkflowRestoration.safeStorageSegment(file.name)}`;const upload=await client.storage.from('factory-files').upload(path,file,{contentType:mime,upsert:false});if(upload.error)throw upload.error;invoice.uploaded.set(key,path);}docs.push({file_name:file.name,storage_path:path,mime_type:mime,file_size:file.size});}return docs;}
-   async function fcPurchaseSubmit(form,scope='current'){if(!['owner','factory'].includes(role))throw Error('当前账号无权登记采购成本');fcPurchaseSyncForm(form);const draft=fc.purchaseDraft;if(!draft||draft.orderId!==form.dataset.orderId)throw Error('采购单草稿已失效，请重新打开订单档案');const candidates=(scope==='all'?draft.invoices:[fcPurchaseActive()]).filter(x=>x&&!x.saved);if(!candidates.length)throw Error('没有待保存的采购单');for(const invoice of candidates){const invalid=fcPurchaseValidate(invoice);if(invalid)throw Error(`${invoice.bill_no||invoice.files[0]?.name||'当前采购单'}：${invalid}`);}draft.busy=true;try{for(let i=0;i<candidates.length;i++){const invoice=candidates[i];fcPurchaseRenderStatus(`正在保存 ${i+1}/${candidates.length}：${invoice.bill_no||invoice.files[0]?.name||invoice.kind}`);const documents=await fcPurchaseUpload(invoice),lines=invoice.lines.filter(x=>String(x.product||'').trim()).map(line=>({product:line.product,spec:line.spec||'',unit:line.unit,quantity:Number(line.quantity),unit_price:Number(line.unit_price),amount:Math.round(Number(line.quantity)*Number(line.unit_price)*100)/100,note:line.remark||''}));await fcRpc('factory_record_order_purchase_cost',{p_order_id:draft.orderId,p_cost_kind:invoice.kind.replace(/单$/,''),p_supplier:invoice.supplier||'',p_bill_no:invoice.bill_no||'',p_bill_date:invoice.bill_date||fcToday(),p_lines:lines,p_note:invoice.note||'',p_documents:documents,p_request_id:invoice.requestId});invoice.saved=true;invoice.readState='已保存并计入本户成本';invoice.error='';}const count=candidates.length;fcPurchaseRelease(draft);fc.purchaseDraft=null;$('#modalRoot').innerHTML='';toast(`已登记 ${count} 张本户成本单`);fc.loaded=false;fc.costEntriesOrder='';fc.historyOrder='';await fcLoad(true);}catch(error){fcPurchaseRenderStatus(`保存失败：${fcFail(error)}。成功的单据保留状态，失败单据可修改后重试。`);throw error;}finally{draft.busy=false;}}
+  async function fcPurchaseReadInvoice(invoice,files,index,total){if(!files.length){invoice.readState='所选文件已识别';fcPurchaseRenderQueue();return;}const parsed=[],confidenceScores=[];invoice.warnings=[];try{for(let i=0;i<files.length;i++){fcPurchaseRenderStatus(`正在读取 ${index}/${total} · ${i+1}/${files.length}：${files[i].name}`);const rotation=Number(document.getElementById('fcPurchaseRotation')?.value||0),result=await rxExtract(files[i],rotation,true);for(const row of result.rows||[])parsed.push({product:row.name||'',spec:row.spec||row.model||'',unit:row.unit||'',quantity:row.qty??'',unit_price:row.price??'',remark:[row.brand||'',row.color||'',row.remark||'',row.qtyDerived?'数量根据金额推算，请核对':'',row.amountDerived?'金额根据数量推算，请核对':''].filter(Boolean).join('；')});invoice.rawText+=(result.text||'')+'\n';invoice.warnings.push(...(result.warnings||[]));if(Number.isFinite(result.confidence))confidenceScores.push(result.confidence);if(result.meta){invoice.supplier||=result.meta.supplier||'';invoice.bill_no||=result.meta.billNo||'';if(result.meta.date)invoice.bill_date=result.meta.date;if(result.meta.declaredTotal!=null)invoice.declared_total=result.meta.declaredTotal;if(result.meta.otherFee!=null)invoice.freight=result.meta.otherFee;if(result.meta.discount!=null)invoice.discount=result.meta.discount;}invoice.scanned.add(fcPurchaseFileKey(files[i]));}invoice.confidence=confidenceScores.length?Math.round(confidenceScores.reduce((a,b)=>a+b,0)/confidenceScores.length):null;if(invoice.confidence!==null&&invoice.confidence<65)invoice.warnings.unshift(`本次识别置信度 ${invoice.confidence}%，容易漏字或错行，请优先对照原图逐项核实。`);invoice.lines=ANJUWorkflowRestoration.mergeInvoiceScanLines(invoice.lines,parsed);invoice.readState=parsed.length?`已识别 ${parsed.length} 行${invoice.confidence!==null?` · 置信度 ${invoice.confidence}%`:''}，待人工核对`:'未识别到明细，可旋转图片重试或手工补录';invoice.error='';}catch(error){invoice.error=fcFail(error);invoice.readState='识别失败，可手动补录';}finally{fcPurchaseRenderStatus(invoice.error?`识别失败：${invoice.error}。原图仍在队列，可手工补齐。`:invoice.warnings?.length?`${invoice.readState}；${invoice.warnings.join('；')}`:invoice.readState);fcPurchaseRenderQueue();}}
+async function fcPurchaseUpload(invoice){const client=fcClient();if(!client)throw Error('请先登录云端账号');invoice.uploaded||=new Map();const docs=[];for(let i=0;i<invoice.files.length;i++){const file=invoice.files[i];if(file.size>31457280)throw Error(`${file.name} 超过 30 MB`);const mime=fcPurchaseMime(file);if(!['image/jpeg','image/png','image/webp','image/gif','application/pdf','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/msword'].includes(mime))throw Error(`${file.name} 文件类型不受支持`);const key=fcPurchaseFileKey(file);let path=invoice.uploaded.get(key);if(!path){const folder=ANJUWorkflowRestoration.documentStorageFolder(invoice.kind);path=`factory/${ANJUWorkflowRestoration.safeStorageSegment(fc.purchaseDraft.orderId)}/${folder}/${ANJUWorkflowRestoration.safeStorageSegment(invoice.bill_date)}/${crypto.randomUUID()}-${ANJUWorkflowRestoration.safeStorageSegment(file.name)}`;const upload=await client.storage.from('factory-files').upload(path,file,{contentType:mime,upsert:false});if(upload.error)throw upload.error;invoice.uploaded.set(key,path);}docs.push({file_name:file.name,storage_path:path,mime_type:mime,file_size:file.size});}return docs;}
+   async function fcPurchaseSubmit(form,scope='current'){if(!['owner','factory'].includes(role))throw Error('当前账号无权登记采购成本');fcPurchaseSyncForm(form);const draft=fc.purchaseDraft;if(!draft||draft.orderId!==form.dataset.orderId)throw Error('采购单草稿已失效，请重新打开订单档案');const candidates=(scope==='all'?draft.invoices:[fcPurchaseActive()]).filter(x=>x&&!x.saved);if(!candidates.length)throw Error('没有待保存的采购单');for(const invoice of candidates){const invalid=fcPurchaseValidate(invoice);if(invalid)throw Error(`${invoice.bill_no||invoice.files[0]?.name||'当前采购单'}：${invalid}`);}draft.busy=true;try{for(let i=0;i<candidates.length;i++){const invoice=candidates[i];fcPurchaseRenderStatus(`正在保存 ${i+1}/${candidates.length}：${invoice.bill_no||invoice.files[0]?.name||invoice.kind}`);const documents=await fcPurchaseUpload(invoice),lines=invoice.lines.filter(x=>String(x.product||'').trim()).map(line=>({product:line.product,spec:line.spec||'',unit:line.unit,quantity:Number(line.quantity),unit_price:Number(line.unit_price),amount:Math.round(Number(line.quantity)*Number(line.unit_price)*100)/100,note:line.remark||''}));await fcRpc('factory_record_order_purchase_cost',{p_order_id:draft.orderId,p_cost_kind:invoice.kind.replace(/单$/,''),p_supplier:invoice.supplier||'',p_bill_no:invoice.bill_no||'',p_bill_date:invoice.bill_date||fcToday(),p_lines:lines,p_note:invoice.note||'',p_documents:documents,p_request_id:invoice.requestId});invoice.saved=true;invoice.readState='已保存并计入本户成本';invoice.error='';}const count=candidates.length,restore={orderId:draft.orderId,scrollY:window.scrollY,hash:location.hash};fcPurchaseRelease(draft);fc.purchaseDraft=null;module='factory';page='factory-cloud-order';fc.selectedOrder=restore.orderId;$('#modalRoot').innerHTML='';toast(`已登记 ${count} 张本户成本单，正在返回本户档案`);fc.loaded=false;fc.costEntriesOrder='';fc.historyOrder='';await fcLoad(true);if(restore.hash&&location.hash!==restore.hash)history.replaceState(null,'',restore.hash);requestAnimationFrame(()=>window.scrollTo(0,restore.scrollY));}catch(error){fcPurchaseRenderStatus(`保存失败：${fcFail(error)}。成功的单据保留状态，失败单据可修改后重试。`);throw error;}finally{draft.busy=false;}}
   function fcConfigRequest(key){if(!fc.configRequestIds.has(key))fc.configRequestIds.set(key,fcReq());return fc.configRequestIds.get(key);}
   async function fcSaveConfigProfile(form,data){
     const orderId=data.get('order_id'),boardSpecs=[...form.querySelectorAll('[data-board-spec]')].map(row=>Object.fromEntries(['brand','base','color','model','process'].map(key=>[key,row.querySelector(`[name="board_${key}[]"]`)?.value.trim()||'']))).filter(x=>Object.values(x).some(Boolean)),hardwareDetails=[...form.querySelectorAll('[data-hardware-detail]')].map(row=>({item:row.querySelector('[name="hardware_item[]"]')?.value.trim()||'',spec:row.querySelector('[name="hardware_spec[]"]')?.value.trim()||''})).filter(x=>x.item||x.spec),get=name=>String(data.get(name)||'').trim();
@@ -6631,7 +7272,7 @@ window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
     if(action==='fc-config-new'&&['owner','factory'].includes(role)){const profile=fc.specProfile||{},boards=Array.isArray(profile.board_specs)&&profile.board_specs.length?profile.board_specs:[{}],hardware=Array.isArray(profile.hardware_details)&&profile.hardware_details.length?profile.hardware_details:[{}];return fcForm('fcConfigForm','本户材料与工艺备注',`<input type="hidden" name="order_id" value="${esc(id)}"><div class="full fc-repeat-group"><div class="fc-inline-actions"><h3>板材规格 / 花色</h3><button type="button" class="btn" data-action="fc-board-add">＋ 添加一项</button></div><div id="fcBoardSpecs">${boards.map(s=>`<div class="fc-repeat-row" data-board-spec>${['brand','base','color','model','process'].map((key,i)=>`<label>${['品牌','基材 / 系列','花色 / 颜色','型号','备注'][i]}<input class="field" name="board_${key}[]" value="${esc(s[key]||'')}"></label>`).join('')}<button type="button" class="btn small" data-action="fc-repeat-remove">移除</button></div>`).join('')}</div></div><h3 class="full">五金</h3><label>主品牌<select class="field" name="hardware_brand" data-hardware-brand><option value="">选择或手动填写</option>${['汉高','诺米','进口百隆','聚森'].map(x=>`<option ${profile.hardware_brand===x?'selected':''}>${x}</option>`).join('')}<option value="自定义">手动输入</option></select></label><label data-custom-brand ${profile.hardware_brand&&!['汉高','诺米','进口百隆','聚森'].includes(profile.hardware_brand)?'':'hidden'}>自定义品牌<input class="field" name="hardware_brand_custom" value="${profile.hardware_brand&&!['汉高','诺米','进口百隆','聚森'].includes(profile.hardware_brand)?esc(profile.hardware_brand):''}"></label><div class="full fc-repeat-group"><div class="fc-inline-actions"><h3>五金明细</h3><button type="button" class="btn" data-action="fc-hardware-add">＋ 添加一项</button></div><div id="fcHardwareDetails">${hardware.map(s=>`<div class="fc-repeat-row" data-hardware-detail><label>五金名称<input class="field" name="hardware_item[]" value="${esc(s.item||'')}" placeholder="如厨房拉篮"></label><label>系列 / 型号 / 备注<input class="field" name="hardware_spec[]" value="${esc(s.spec||'')}"></label><button type="button" class="btn small" data-action="fc-repeat-remove">移除</button></div>`).join('')}</div></div><label class="full">特殊物件 / 外斜订货<textarea class="field" name="special_items" rows="3" placeholder="外斜玻璃门、烤漆门、古格门等"></textarea></label><label class="full">材料规格体与工艺要求<textarea class="field" name="requirements" rows="3"></textarea></label>`);}
     if(action==='fc-doc-upload'&&['owner','factory'].includes(role))return fcForm('fcDocumentForm','上传工厂资料 / 照片',`<input type="hidden" name="order_id" value="${esc(id)}">`+fcSelect('kind','资料类型',role==='foreman'?['现场照片']:['订货单','板材单','五金清单','报价单','特殊备注','图纸','五金单','合同','变更单','其他资料'])+fcField('version','版本')+`<label class="full">附件（可多选）<input class="field" type="file" name="files" multiple accept="image/*,application/pdf,.xls,.xlsx,.csv,.tsv,.doc,.docx,.txt" required></label><label class="full">说明<textarea class="field" name="note"></textarea></label>`);
     if(action==='fc-order-assign'&&fcIsOwner())return fcForm('fcAssignForm','分配订单负责人',`<input type="hidden" name="order_id" value="${esc(id)}"><label>门店设计师<select class="field" name="store_designer_id"><option value="">未分配</option>${fc.assignmentUsers.filter(x=>x.role_name==='designer').map(x=>`<option value="${x.user_id}">${esc(x.display_name)}</option>`).join('')}</select></label><label>拆单设计师<select class="field" name="breakdown_designer_id"><option value="">未分配</option>${fc.assignmentUsers.filter(x=>x.role_name==='designer').map(x=>`<option value="${x.user_id}">${esc(x.display_name)}</option>`).join('')}</select></label><label>车间负责人<select class="field" name="workshop_lead_id"><option value="">未分配</option>${fc.assignmentUsers.filter(x=>['foreman','factory_manager'].includes(x.role_name)).map(x=>`<option value="${x.user_id}">${esc(x.display_name)}</option>`).join('')}</select></label><label>门店设计师姓名<input class="field" name="store_designer_name"></label><label>拆单设计师姓名<input class="field" name="breakdown_designer_name"></label><label>车间负责人姓名<input class="field" name="workshop_lead_name"></label>`);
-    if(action==='fc-cash-new'&&['owner','factory'].includes(role))return fcForm('fcCashForm','登记订单收款 / 付款',(id?`<input type="hidden" name="order_id" value="${esc(id)}">`:`<label class="full">关联工单<select class="field" name="order_id" required><option value="">请选择工单</option>${fcOrdersOpts()}</select></label>`)+fcSelect('kind','类型',['收款','付款'])+`<label data-cash-stage>款项阶段<select class="field" name="stage"><option>定金</option><option>中期款</option><option>尾款</option><option>其他</option></select></label>`+fcField('sequence','第几次收款','number','1',true,'1')+fcField('date','日期','date',fcToday(),true)+fcField('amount','收款 / 付款金额','number','',true,'0.01')+fcSelect('method','方式',['银行转账','微信','支付宝','现金','其他'])+fcField('counterparty','往来方')+`<label class="full">说明<textarea class="field" name="note"></textarea></label>`);
+    if(action==='fc-cash-new'&&['owner','factory'].includes(role))return fcForm('fcCashForm','登记订单收款 / 付款',(id?`<input type="hidden" name="order_id" value="${esc(id)}">`:`<label class="full">关联工单<select class="field" name="order_id" required><option value="">请选择工单</option>${fcOrdersOpts()}</select></label>`)+fcSelect('kind','类型',['收款','付款'])+`<label data-cash-stage>款项阶段<select class="field" name="stage"><option>定金</option><option>中期款</option><option>尾款</option><option>其他</option></select></label>`+fcField('sequence','第几次收款','number','1',true,'1')+fcField('date','日期','date',fcToday(),true)+fcField('amount','收款 / 付款金额','number','',true,'0.01')+fcSelect('method','方式',['银行转账','微信','支付宝','现金','其他'])+fcField('counterparty','往来方')+`<label class="full fc-proof-upload">收付款凭证（照片 / 截图 / PDF，可多选）<input class="field" type="file" name="proof_files" accept="image/jpeg,image/png,image/webp,application/pdf" multiple><small>单个文件最大 20 MB，最多 8 个；只有老板账号可查看。</small></label><label class="full">说明<textarea class="field" name="note"></textarea></label>`);
     if(action==='fc-outsourcing-new'&&['owner','factory'].includes(role))return fcForm('fcOutsourceForm','登记外购 / 外协成本',`<input type="hidden" name="order_id" value="${esc(id)}">`+fcField('process','外购项目 / 工序','text','',true)+fcField('supplier','供应商')+fcField('planned_date','登记日期','date',fcToday(),true)+`<input type="hidden" name="status" value="已验收"><input type="hidden" name="quality_result" value="">`+fcField('actual_cost','支出金额','number','',true,'0.01')+`<label class="full">备注<textarea class="field" name="note" placeholder="记录订购内容、材料或加工说明"></textarea></label>`);
     if(action==='fc-site-note-new'&&['owner','factory','foreman'].includes(role))return fcForm('fcSiteNoteForm','添加现场备注',`<input type="hidden" name="order_id" value="${esc(id)}">`+fcSelect('kind','记录类型',['接单要求','特殊工艺','现场备注','验货'])+`<label class="full">记录<textarea class="field" name="content" required></textarea></label>`);
     if(action==='fc-attendance-batch'&&['owner','factory'].includes(role)){const result=fcForm('fcAttendanceBatchForm','一键登记每日考勤',`${fcField('work_date','日期','date',fcToday(),true)}<div class="full fc-inline-actions"><button type="button" class="btn" data-action="fc-attendance-all-present">全部出勤</button><button type="button" class="btn" data-action="fc-attendance-all-absent">全部未出勤（休息）</button><span class="fc-muted">先统一设定，再逐人调整状态、工时、计件数量和加班时长。</span></div><div class="full fc-attendance-batch-grid">${fc.safeEmployees.filter(x=>x.employment_status==='在职').map(x=>`<div class="fc-allocation"><b>${esc(x.employee_name)}</b><small class="fc-pay-method">${esc(x.pay_method||'未设置计薪方式')} · ${esc(x.job||'')}</small>${fcSelect(`status_${x.id}`,'状态',['出勤','请假','旷工','休息'])}${fcField(`hours_${x.id}`,'工时','number','8',false,'0.01')}${x.pay_method==='计件'?fcField(`pieces_${x.id}`,'计件数量','number','0',false,'0.001'):''}${fcField(`overtime_${x.id}`,'加班时长','number','0',false,'0.01')}</div>`).join('')}</div>`);$('#modalRoot .modal')?.classList.add('fc-attendance-batch-modal');return result;}
@@ -6643,14 +7284,17 @@ window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
       const issues=fc.movements.filter(x=>x.movement_type==='出库').map(x=>`<option value="${x.id}">${esc(x.material_name)} · ${x.quantity}${esc(x.unit)} · ${esc(x.order_no||'订单')}</option>`).join('');
       const result=fcForm('fcMovementForm','登记库存流水',fcSelect('movement_type','业务类型',['入库','出库','退料','盘盈','盘亏'])+`<label>材料<select class="field" name="material_id" required>${fc.inventory.map(x=>`<option value="${x.id}">${esc(x.material_name)} · 现存 ${x.quantity_on_hand}${esc(x.unit)}</option>`).join('')}</select></label>`+fcField('quantity','数量','number','',true,'0.001')+fcField('unit_price',fcIsOwner()?'入库单价':'入库单价（提交后不显示历史值）','number','0',false,'0.0001')+(fcIsOwner()?fcField('supplier_source','供应商 / 来源'):fcField('supplier_source','供应商 / 来源'))+`<label>关联订单<select class="field" name="order_id"><option value="">库存 / 未指定</option>${fcOrdersOpts()}</select></label><label>退料对应出库<select class="field" name="reverses_movement_id"><option value="">请选择原出库</option>${issues}</select></label>`+fcField('purpose','用途 / 工序')+fcField('handled_by','经手人')+`<label class="full">备注<textarea class="field" name="note"></textarea></label>`);if(id){const form=document.getElementById('fcMovementForm');form.elements.order_id.value=id;form.elements.movement_type.value='出库';}return result;
     }
-    if(action==='fc-bulk-in-new'&&['owner','factory'].includes(role)){const options=fc.inventory.filter(x=>x.cost_category==='五金'||x.category==='五金'||x.category==='特殊物资').map(x=>`<option value="${x.id}">${esc(x.material_name)} · ${esc(x.spec||x.unit)}</option>`).join('');return fcForm('fcBulkInventoryForm','扫描 / 登记五金采购单',`${fcField('movement_date','入库日期','date',fcToday(),true)}${fcField('supplier_source','供应商 / 来源')}<label class="full">扫描原单（图片、PDF、Excel、CSV）<input class="field" type="file" id="fcBulkInventoryScan" accept="image/*,application/pdf,.xls,.xlsx,.csv,.tsv"></label><div class="full fc-inline-actions"><button type="button" class="btn" data-action="fc-bulk-scan">扫描并匹配物资</button><button type="button" class="btn" data-action="fc-bulk-row-add">＋ 手动添加一行</button></div><p class="full fc-muted">识别行会先匹配现有五金档案并按相同物资去重，再由你核对数量和单价；未匹配的物资请先建立档案。确认后才写入公共库存。</p><div id="fcBulkInventoryRows" class="full fc-bulk-inventory-rows">${fcBulkInventoryRow(options)}</div>${fcField('handled_by','经手人')}<label class="full">备注<textarea class="field" name="note"></textarea></label>`);}
+    if(action==='fc-bulk-in-new'&&['owner','factory'].includes(role)){const options=fc.inventory.filter(x=>x.cost_category==='五金'||x.category==='五金'||x.category==='特殊物资').map(x=>`<option value="${x.id}">${esc(x.material_name)} · ${esc(x.spec||x.unit)}</option>`).join('');return fcForm('fcBulkInventoryForm','扫描 / 登记五金采购单',`${fcField('movement_date','入库日期','date',fcToday(),true)}${fcField('supplier_source','供应商 / 来源')}<label class="full">扫描原单（图片、PDF、Excel、CSV）<input class="field" type="file" id="fcBulkInventoryScan" accept="image/*,application/pdf,.xls,.xlsx,.csv,.tsv"></label><label>图片方向<select class="field" name="scan_rotation"><option value="0">正常</option><option value="90">顺时针 90°</option><option value="180">旋转 180°</option><option value="270">逆时针 90°</option></select></label><div class="full fc-inline-actions"><button type="button" class="btn" data-action="fc-bulk-scan">扫描并匹配物资</button><button type="button" class="btn" data-action="fc-bulk-row-add">＋ 手动添加一行</button></div><p class="full fc-muted">识别行会先匹配现有五金档案并按相同物资去重，再由你核对数量和单价；未匹配的物资请先建立档案。确认后才写入公共库存。</p><div id="fcBulkInventoryRows" class="full fc-bulk-inventory-rows">${fcBulkInventoryRow(options)}</div>${fcField('handled_by','经手人')}<label class="full">备注<textarea class="field" name="note"></textarea></label>`);}
     if(action==='fc-attendance-new')return fcForm('fcAttendanceForm','登记考勤',`<label>员工<select class="field" name="employee_id" required>${fc.safeEmployees.filter(x=>x.employment_status==='在职').map(x=>`<option value="${x.id}">${esc(x.employee_name)} · ${esc(x.pay_method||'计薪方式未设置')} · ${esc(x.job||'')}</option>`).join('')}</select></label>${fcField('work_date','日期','date',fcToday(),true)+fcField('job','岗位')+fcSelect('attendance_status','考勤状态',['出勤','请假','旷工','加班','休息'])+fcField('hours','工作时长','number','8',true,'0.01')+fcField('piece_quantity','计件数量','number','0',false,'0.001')+fcField('overtime_hours','加班时长（只记录）','number','0',false,'0.01')}<p class="full fc-muted">工资按月薪、日薪×出勤天数或计件单价×数量汇总为工厂公共月人工，不关联客户订单；加班只记录时长。</p><label class="full">工作内容<textarea class="field" name="work_content"></textarea></label><label class="full">备注<textarea class="field" name="note"></textarea></label>`);
     if(action==='fc-employee-new'&&fcIsOwner())return fcForm('fcEmployeeForm','新增员工',fcField('employee_name','姓名','text','',true)+fcField('job','岗位')+fcSelect('pay_method','计薪方式',['月薪','日薪','计件'])+fcField('pay_rate','工资标准（月薪填月工资，日薪填日工资）','number','',true,'0.01')+fcSelect('employment_status','状态',['在职','离职'])+fcField('effective_from','生效日期','date',fcToday(),true)+`<label class="full">备注<textarea class="field" name="note"></textarea></label>`);
     if(action==='fc-fixed-new'&&['owner','factory'].includes(role))return fcForm('fcFixedForm','登记工厂公共费用',fcField('month','成本月份','month',fcMonth(),true)+`<label>类别<input class="field" name="category" list="fcFixedCategories" placeholder="选择或手动输入" required><datalist id="fcFixedCategories"><option>房租</option><option>水电</option><option>固定人工</option><option>折旧</option><option>办公软件</option><option>营销推广</option><option>其他</option></datalist></label>`+fcField('item','项目 / 费用内容','text','',true)+`<label>周期<select class="field" name="cost_mode"><option value="monthly">按月登记</option><option value="annual">按年登记（自动平分到12个月）</option><option value="one_time">其他 / 一次性（只计本月）</option></select></label><p class="full fc-muted">按年登记填写全年总额，系统平均分摊到12个月；一次性费用只计入选择月份。员工月薪、日薪和计件工资由考勤自动汇总。</p>`+fcField('amount','金额 / 全年总额','number','',true,'0.01')+`<input type="hidden" name="ownership" value="工厂"><label class="full">备注<textarea class="field" name="note"></textarea></label>`);
     if(action==='fc-cost-reverse'&&fcIsOwner()){const entry=fc.costEntries.find(x=>x.id===id);if(entry)return fcForm('fcCostReverseForm','红冲老板手工成本',`<input type="hidden" name="entry_id" value="${id}"><p class="full">${esc(entry.cost_category)} · ${fcMoney(entry.amount)} · 原登记将保留并以负向流水冲回。</p><label class="full">更正原因<textarea class="field" name="note" required></textarea></label>`);}
+    if(action==='fc-payroll-extra'&&fcIsOwner())return fcForm('fcPayrollExtraForm','登记工资特殊情况',fcField('month','成本月份','month',fc.attendanceMonth||fcMonth(),true)+fcField('item','特殊情况','text','临时补贴 / 特殊人工',true)+fcField('amount','计入公共人工金额','number','',true,'0.01')+`<label class="full">说明<textarea class="field" name="note" placeholder="说明特殊人工的事由"></textarea></label><p class="full fc-muted">该笔费用作为固定人工列入本月净利润和工资合计，不更改员工原始计薪标准。</p>`);
+    if(action==='fc-payroll-adjust'&&fcIsOwner()){const target=fc.payrollTargets.find(x=>x.snapshot_id===id);if(target)return fcForm('fcPayrollAdjustForm','月薪结算增减项',`<input type="hidden" name="snapshot_id" value="${esc(id)}"><p class="full">${esc(target.employee_name)} · ${fcDateVal(target.payroll_month).slice(0,7)} · 当前结算 ${fcMoney(target.amount)}</p><label>增减金额<input class="field" type="number" name="amount" step="0.01" required placeholder="正数增加，负数扣减"></label><label class="full">说明<textarea class="field" name="note" required></textarea></label>`);}
     if(action==='fc-payroll-close'&&fcIsOwner()){if(!confirm(`确认核算 ${fcMonth()} 月工资？月薪生成结算快照，日薪与计件按考勤自动计入公共固定人工。`))return;fcSubmitRpc('owner_close_factory_payroll',{p_month:`${fcMonth()}-01`,p_request_id:fcReq()}).catch(e=>toast(`保存失败：${fcFail(e)}`));return;}
   }
-  async function fcSubmitRpc(name,args){await fcRpc(name,{...args,p_request_id:fcReq()});$('#modalRoot').innerHTML='';toast('已保存');fc.loaded=false;if(fc.selectedOrder)fc.costEntriesOrder='';await fcLoad(true);}
+  async function fcCashUploadProofs(form,orderId){if(!['owner','factory'].includes(role))throw Error('当前账号无权添加收付款凭证');const files=[...form.elements.proof_files.files].filter(x=>x.size);if(files.length>8)throw Error('一次最多上传 8 个凭证文件');const client=fcClient(),uploaded=[],docs=[];try{for(const file of files){if(file.size>20971520)throw Error(`${file.name} 超过 20 MB`);const mime=fcPurchaseMime(file);if(!['image/jpeg','image/png','image/webp','application/pdf'].includes(mime))throw Error(`${file.name} 只支持 JPG、PNG、WEBP 或 PDF`);const path=`cash/${orderId}/${crypto.randomUUID()}-${ANJUWorkflowRestoration.safeStorageSegment(file.name)}`,result=await client.storage.from('factory-payment-proofs').upload(path,file,{contentType:mime,upsert:false});if(result.error)throw result.error;uploaded.push(path);docs.push({file_name:file.name,storage_path:path,mime_type:mime,file_size:file.size});}return docs;}catch(error){if(uploaded.length)client.storage.from('factory-payment-proofs').remove(uploaded).catch(()=>{});throw error;}}
+  async function fcSubmitRpc(name,args){await fcRpc(name,{...args,p_request_id:args.p_request_id||fcReq()});$('#modalRoot').innerHTML='';toast('已保存');fc.loaded=false;if(fc.selectedOrder)fc.costEntriesOrder='';await fcLoad(true);}
   function fcExport(kind){
     const month=fc.attendanceMonth||fcMonth(),owner=fcIsOwner();
     let data=kind==='attendance'?fc.attendance.filter(x=>fcDateVal(x.work_date).slice(0,7)===month):kind==='payroll'&&owner?{factory_monthly_labor:fc.payroll}:kind==='finance'&&owner?fc.accounts.filter(x=>x.business_line==='factory'&&x.period_kind==='month'&&fcDateVal(x.period).slice(0,7)===(fc.financeMonth||fcMonth())):kind==='backup'&&owner?{orders:fc.orders,inventory:fc.valuation,movements:fc.ownerMovements,employees:fc.employees,attendance:fc.attendance,payroll:fc.payroll}:null;
@@ -6675,15 +7319,14 @@ window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
     return fcPrevRender();
   };
    document.addEventListener('click',e=>{const b=e.target.closest('[data-action^="fc-"]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();const a=b.dataset.action,id=b.dataset.id;
-     if(a==='fc-inventory-category'){fc.inventoryCategory=b.dataset.category==='辅料'?'辅料':'五金';render();return;}if(a==='fc-production-filter'){fc.productionFilter=b.dataset.filter||'生产中';render();return;}if(a==='fc-board-add'){document.getElementById('fcBoardSpecs')?.insertAdjacentHTML('beforeend',`<div class="fc-repeat-row" data-board-spec>${['brand','base','color','model','process'].map((key,i)=>`<label>${['品牌','基材 / 系列','花色 / 颜色','型号','规格体 / 工艺'][i]}<input class="field" name="board_${key}[]"></label>`).join('')}<button type="button" class="btn small" data-action="fc-repeat-remove">移除</button></div>`);return;}if(a==='fc-hardware-add'){document.getElementById('fcHardwareDetails')?.insertAdjacentHTML('beforeend','<div class="fc-repeat-row" data-hardware-detail><label>五金名称<input class="field" name="hardware_item[]" placeholder="如厨房拉篮"></label><label>系列 / 型号 / 备注<input class="field" name="hardware_spec[]"></label><button type="button" class="btn small" data-action="fc-repeat-remove">移除</button></div>');return;}if(a==='fc-repeat-remove'){b.closest('.fc-repeat-row')?.remove();return;}
-     if(a==='fc-doc-view'){const tab=window.open('about:blank','_blank');if(!tab){toast('浏览器拦截了新标签页，请允许此站点打开附件');return;}fcClient().storage.from('factory-files').createSignedUrl(id,300).then(({data,error})=>{if(error)throw error;if(!data?.signedUrl)throw Error('未生成附件链接');tab.location.href=data.signedUrl}).catch(err=>{tab.close();toast(`附件打开失败：${fcFail(err)}`)});return;}if(a==='fc-export'){fcExport(b.dataset.kind);return;}if(a==='fc-refresh'){fc.loaded=false;fcLoad(true);return;}if(a==='fc-order-open'){fc.selectedOrder=id;page='factory-cloud-order';render();return;}if(a==='fc-cost-entry-refresh'){fc.costEntriesOrder='';fcLoadCosts(fc.selectedOrder);return;}if(a==='fc-purchase-read'){const form=b.closest('#fcPurchaseForm');if(form)fcPurchaseRead(form).catch(err=>{fcPurchaseRenderStatus(`识别失败：${fcFail(err)}；原件仍在队列，可以手动录入。`);});return;}if(a==='fc-purchase-invoice-delete'){const draft=fc.purchaseDraft,invoice=draft?.invoices.find(x=>x.id===id);if(!invoice||invoice.saved)return;if(!confirm('删除这张未保存的采购单及其上传附件？'))return;const paths=[...(invoice.uploaded?.values?.()||[])].map(x=>x?.path).filter(Boolean);if(paths.length)fcClient().storage.from('factory-files').remove(paths).catch(()=>{});for(const url of invoice.previews?.values?.()||[])if(typeof url==='string'&&url.startsWith('blob:'))URL.revokeObjectURL(url);draft.invoices=draft.invoices.filter(x=>x.id!==id);if(!draft.invoices.length){const next=fcPurchaseBlankInvoice();draft.invoices=[next];draft.activeInvoiceId=next.id;}else if(draft.activeInvoiceId===id)draft.activeInvoiceId=draft.invoices[0].id;fcPurchaseRenderQueue();return;}if(a==='fc-purchase-add-invoice'){const form=b.closest('#fcPurchaseForm');fcPurchaseSyncForm(form);const invoice=fcPurchaseBlankInvoice(fcPurchaseActive()?.kind||'板材单');fc.purchaseDraft.invoices.push(invoice);fc.purchaseDraft.activeInvoiceId=invoice.id;fcPurchaseRenderQueue();return;}if(a==='fc-purchase-switch'){const form=b.closest('#fcPurchaseForm');fcPurchaseSyncForm(form);fc.purchaseDraft.activeInvoiceId=id;fcPurchaseRenderQueue();return;}if(a==='fc-purchase-file-remove'){const form=b.closest('#fcPurchaseForm');fcPurchaseSyncForm(form);const invoice=fcPurchaseActive(),file=invoice?.files.splice(Number(id),1)[0];if(file&&invoice.uploaded?.has(fcPurchaseFileKey(file)))invoice.uploaded.delete(fcPurchaseFileKey(file));fcPurchaseRenderQueue();return;}if(a==='fc-purchase-add'){const form=b.closest('#fcPurchaseForm');fcPurchaseSyncForm(form);const invoice=fcPurchaseActive();invoice.lines.push({material_id:'',product:'',spec:'',unit:'',quantity:'',unit_price:'',remark:''});invoice.reviewed=false;fcPurchaseRenderQueue();return;}if(a==='fc-purchase-remove'){const form=b.closest('#fcPurchaseForm');fcPurchaseSyncForm(form);const invoice=fcPurchaseActive();if(invoice.lines.length>1)invoice.lines.splice(Number(b.closest('[data-fc-purchase-line]')?.dataset.lineId),1);invoice.reviewed=false;fcPurchaseRenderQueue();return;}if(a==='fc-bulk-row-add'||a==='fc-bulk-row-remove'){const form=b.closest('#fcBulkInventoryForm'),rows=form?.querySelector('#fcBulkInventoryRows');if(rows){if(a==='fc-bulk-row-remove')b.closest('.fc-bulk-inventory-row')?.remove();else{const options=fc.inventory.map(x=>`<option value="${x.id}">${esc(x.material_name)} · ${esc(x.spec||x.unit)}</option>`).join('');rows.insertAdjacentHTML('beforeend',fcBulkInventoryRow(options));}}return;}if(a==='fc-bulk-scan'){const form=b.closest('#fcBulkInventoryForm'),file=form?.querySelector('#fcBulkInventoryScan')?.files?.[0];if(!file){toast('请先选择一张采购单');return;}if(typeof rxExtract!=='function'){toast('识别服务未启动，仍可手动登记');return;}rxExtract(file,0,true).then(result=>{const rows=document.getElementById('fcBulkInventoryRows'),options=fc.inventory.map(x=>`<option value="${x.id}">${esc(x.material_name)} · ${esc(x.spec||x.unit)}</option>`).join(''),unmatched=[];rows.innerHTML='';const grouped=new Map();for(const line of result.rows||[]){const needle=String(line.name||'').trim(),material=fc.inventory.find(x=>(x.cost_category==='五金'||x.category==='五金'||x.category==='特殊物资')&&(needle===x.material_name||needle.includes(x.material_name)||x.material_name.includes(needle)));if(!material){unmatched.push(line.name||'未识别名称');continue;}const price=Number(line.price||0),key=material.id+'|'+price,existing=grouped.get(key);if(existing){existing.qty+=Number(line.qty||0);existing.notes.push(...[line.spec,line.remark].filter(Boolean));}else grouped.set(key,{material,price,qty:Number(line.qty||0),notes:[line.spec,line.remark].filter(Boolean)});}for(const value of grouped.values()){rows.insertAdjacentHTML('beforeend',fcBulkInventoryRow(options));const row=rows.lastElementChild;row.querySelector('[name="material_id"]').value=value.material.id;row.querySelector('[name="quantity"]').value=value.qty||'';row.querySelector('[name="unit_price"]').value=value.price||'';row.querySelector('[name="line_note"]').value=[...new Set(value.notes)].join('；');}if(!rows.children.length)rows.innerHTML=fcBulkInventoryRow(options);toast(unmatched.length?`已匹配 ${rows.children.length} 行；未匹配 ${unmatched.slice(0,4).join('、')}，请先建立物资档案或手动添加。`:`识别到并匹配 ${rows.children.length} 行，请逐行核对。`);}).catch(error=>toast(`扫描失败：${fcFail(error)}；可手动登记。`));return;}if(a==='fc-attendance-all-present'||a==='fc-attendance-all-absent'){const form=b.closest('#fcAttendanceBatchForm'),value=a==='fc-attendance-all-present'?'出勤':'休息';form?.querySelectorAll('select[name^="status_"]').forEach(s=>s.value=value);return;}fcOpenForm(a,id,b.dataset.kind||'板材单');
+     if(a==='fc-inventory-category'){fc.inventoryCategory=b.dataset.category==='辅料'?'辅料':'五金';render();return;}if(a==='fc-production-filter'){fc.productionFilter=b.dataset.filter||'生产中';render();return;}if(a==='fc-board-add'){document.getElementById('fcBoardSpecs')?.insertAdjacentHTML('beforeend',`<div class="fc-repeat-row" data-board-spec>${['brand','base','color','model','process'].map((key,i)=>`<label>${['品牌','基材 / 系列','花色 / 颜色','型号','备注'][i]}<input class="field" name="board_${key}[]"></label>`).join('')}<button type="button" class="btn small" data-action="fc-repeat-remove">移除</button></div>`);return;}if(a==='fc-hardware-add'){document.getElementById('fcHardwareDetails')?.insertAdjacentHTML('beforeend','<div class="fc-repeat-row" data-hardware-detail><label>五金名称<input class="field" name="hardware_item[]" placeholder="如厨房拉篮"></label><label>系列 / 型号 / 备注<input class="field" name="hardware_spec[]"></label><button type="button" class="btn small" data-action="fc-repeat-remove">移除</button></div>');return;}if(a==='fc-repeat-remove'){b.closest('.fc-repeat-row')?.remove();return;}
+     if(a==='fc-proof-view'){if(!fcIsOwner()){toast('收付款凭证仅老板账号可查看');return;}const tab=window.open('about:blank','_blank');if(!tab){toast('浏览器拦截了新标签页，请允许此站点打开附件');return;}fcClient().storage.from('factory-payment-proofs').createSignedUrl(id,300).then(({data,error})=>{if(error)throw error;if(!data?.signedUrl)throw Error('未生成凭证链接');tab.location.href=data.signedUrl}).catch(err=>{tab.close();toast(`凭证打开失败：${fcFail(err)}`)});return;}if(a==='fc-doc-view'){const tab=window.open('about:blank','_blank');if(!tab){toast('浏览器拦截了新标签页，请允许此站点打开附件');return;}fcClient().storage.from('factory-files').createSignedUrl(id,300).then(({data,error})=>{if(error)throw error;if(!data?.signedUrl)throw Error('未生成附件链接');tab.location.href=data.signedUrl}).catch(err=>{tab.close();toast(`附件打开失败：${fcFail(err)}`)});return;}if(a==='fc-export'){fcExport(b.dataset.kind);return;}if(a==='fc-refresh'){fc.loaded=false;fcLoad(true);return;}if(a==='fc-order-open'){fc.selectedOrder=id;page='factory-cloud-order';render();return;}if(a==='fc-cost-entry-refresh'){fc.costEntriesOrder='';fcLoadCosts(fc.selectedOrder);return;}if(a==='fc-purchase-read'){const form=b.closest('#fcPurchaseForm');if(form)fcPurchaseRead(form).catch(err=>{fcPurchaseRenderStatus(`识别失败：${fcFail(err)}；原件仍在队列，可以手动录入。`);});return;}if(a==='fc-purchase-invoice-delete'){const draft=fc.purchaseDraft,invoice=draft?.invoices.find(x=>x.id===id);if(!invoice||invoice.saved)return;if(!confirm('删除这张未保存的采购单及其上传附件？'))return;const paths=[...(invoice.uploaded?.values?.()||[])].map(x=>x?.path).filter(Boolean);if(paths.length)fcClient().storage.from('factory-files').remove(paths).catch(()=>{});for(const url of invoice.previews?.values?.()||[])if(typeof url==='string'&&url.startsWith('blob:'))URL.revokeObjectURL(url);draft.invoices=draft.invoices.filter(x=>x.id!==id);if(!draft.invoices.length){const next=fcPurchaseBlankInvoice();draft.invoices=[next];draft.activeInvoiceId=next.id;}else if(draft.activeInvoiceId===id)draft.activeInvoiceId=draft.invoices[0].id;fcPurchaseRenderQueue();return;}if(a==='fc-purchase-add-invoice'){const form=b.closest('#fcPurchaseForm');fcPurchaseSyncForm(form);const invoice=fcPurchaseBlankInvoice(fcPurchaseActive()?.kind||'板材单');fc.purchaseDraft.invoices.push(invoice);fc.purchaseDraft.activeInvoiceId=invoice.id;fcPurchaseRenderQueue();return;}if(a==='fc-purchase-switch'){const form=b.closest('#fcPurchaseForm');fcPurchaseSyncForm(form);fc.purchaseDraft.activeInvoiceId=id;fcPurchaseRenderQueue();return;}if(a==='fc-purchase-file-remove'){const form=b.closest('#fcPurchaseForm');fcPurchaseSyncForm(form);const invoice=fcPurchaseActive(),file=invoice?.files.splice(Number(id),1)[0];if(file&&invoice.uploaded?.has(fcPurchaseFileKey(file)))invoice.uploaded.delete(fcPurchaseFileKey(file));fcPurchaseRenderQueue();return;}if(a==='fc-purchase-add'){const form=b.closest('#fcPurchaseForm');fcPurchaseSyncForm(form);const invoice=fcPurchaseActive();invoice.lines.push({material_id:'',product:'',spec:'',unit:'',quantity:'',unit_price:'',remark:''});invoice.reviewed=false;fcPurchaseRenderQueue();return;}if(a==='fc-purchase-remove'){const form=b.closest('#fcPurchaseForm');fcPurchaseSyncForm(form);const invoice=fcPurchaseActive();if(invoice.lines.length>1)invoice.lines.splice(Number(b.closest('[data-fc-purchase-line]')?.dataset.lineId),1);invoice.reviewed=false;fcPurchaseRenderQueue();return;}if(a==='fc-bulk-create-material'){const form=b.closest('#fcBulkInventoryForm'),row=b.closest('.fc-bulk-inventory-row'),name=row?.querySelector('[name="unmatched_name"]')?.value.trim();if(!form||!row||!name){toast('先核对或补填识别到的物资名称');return;}fc.bulkInventoryDraft=fcBulkCapture(form,row);fcOpenForm('fc-material-new');const materialForm=document.getElementById('fcMaterialForm');if(materialForm){materialForm.elements.material_name.value=name;materialForm.elements.cost_category.value='五金';}return;}if(a==='fc-bulk-row-add'||a==='fc-bulk-row-remove'){const form=b.closest('#fcBulkInventoryForm'),rows=form?.querySelector('#fcBulkInventoryRows');if(rows){if(a==='fc-bulk-row-remove')b.closest('.fc-bulk-inventory-row')?.remove();else{const options=fc.inventory.map(x=>`<option value="${x.id}">${esc(x.material_name)} · ${esc(x.spec||x.unit)}</option>`).join('');fcBulkAppendRow(rows,options);}}return;}if(a==='fc-bulk-scan'){const form=b.closest('#fcBulkInventoryForm'),file=form?.querySelector('#fcBulkInventoryScan')?.files?.[0];if(!file){toast('请先选择一张采购单');return;}if(typeof rxExtract!=='function'){toast('识别服务未启动，仍可手动登记');return;}rxExtract(file,Number(form.elements.scan_rotation?.value||0),true).then(result=>{const rows=form.querySelector('#fcBulkInventoryRows'),options=fc.inventory.filter(x=>x.cost_category==='五金'||x.category==='五金'||x.category==='特殊物资').map(x=>`<option value="${x.id}">${esc(x.material_name)} · ${esc(x.spec||x.unit)}</option>`).join(''),grouped=new Map();for(const line of result.rows||[]){const needle=String(line.name||'').trim(),material=needle?fc.inventory.find(x=>(x.cost_category==='五金'||x.category==='五金'||x.category==='特殊物资')&&(needle===x.material_name||needle.includes(x.material_name)||x.material_name.includes(needle))):null,price=Number(line.price||0),normalized=needle.toLowerCase().replace(/\s+/g,''),key=material?`${material.id}|${price}`:`unmatched|${normalized||grouped.size}|${price}`,existing=grouped.get(key);if(existing){existing.qty+=Number(line.qty||0);existing.notes.push(...[line.spec,line.remark].filter(Boolean));}else grouped.set(key,{material,unmatched_name:material?'':needle||'未识别名称（请手动填写）',price,qty:Number(line.qty||0),notes:[line.spec,line.remark].filter(Boolean)});}rows.innerHTML='';let matched=0,unmatched=0;for(const value of grouped.values()){if(value.material)matched++;else unmatched++;fcBulkAppendRow(rows,options,{material_id:value.material?.id||'',unmatched_name:value.unmatched_name,quantity:value.qty||'',unit_price:value.price||'',line_note:[...new Set(value.notes)].join('；')});}if(!rows.children.length)fcBulkAppendRow(rows,options);const score=Number.isFinite(result.confidence)?` OCR ${result.confidence}%；`:'';toast(`识别完成：${score}匹配 ${matched} 行，未匹配 ${unmatched} 行已保留。未匹配项可修改名称后点“新建物资档案”。`);}).catch(error=>toast(`扫描失败：${fcFail(error)}；可手动登记。`));return;}if(a==='fc-attendance-all-present'||a==='fc-attendance-all-absent'){const form=b.closest('#fcAttendanceBatchForm'),value=a==='fc-attendance-all-present'?'出勤':'休息';form?.querySelectorAll('select[name^="status_"]').forEach(s=>s.value=value);return;}fcOpenForm(a,id,b.dataset.kind||'板材单');
   },true);
-   document.addEventListener('change',e=>{if(e.target.name==='business_source'){const form=e.target.closest('#fcOrderForm'),label=form?.querySelector('[data-channel-field]'),input=form?.elements.channel_customer_name;if(label)label.hidden=e.target.value!=='渠道';if(input)input.required=e.target.value==='渠道';return;}if(e.target.matches('[name$="_designer_id"],[name="workshop_lead_id"]')){const form=e.target.closest('#fcAssignForm'),mapping={store_designer_id:'store_designer_name',breakdown_designer_id:'breakdown_designer_name',workshop_lead_id:'workshop_lead_name'},target=form?.elements[mapping[e.target.name]];if(target&&e.target.value)target.value=e.target.selectedOptions[0]?.textContent||'';return;}if(e.target.id==='fcPurchaseGrouping'&&fc.purchaseDraft){fc.purchaseDraft.grouping=e.target.value;return;}if(e.target.name==='manual_total_mode'&&fc.purchaseDraft){const form=e.target.closest('#fcPurchaseForm');fcPurchaseSyncForm(form);fcPurchaseRenderQueue();return;}if(e.target.id==='fcPurchaseFiles'){const form=e.target.closest('#fcPurchaseForm'),draft=fc.purchaseDraft;if(!form||!draft)return;draft.grouping=document.getElementById('fcPurchaseGrouping')?.value||draft.grouping||'separate';fcPurchaseSyncForm(form);const invoice=fcPurchaseActive(),files=[...e.target.files];if(draft.grouping==='separate'&&(invoice.files.length>0||invoice.lines.some(x=>x.product)||invoice.supplier||invoice.bill_no)){for(const file of files){const next=fcPurchaseBlankInvoice(invoice.kind);next.files=[file];draft.invoices.push(next);draft.activeInvoiceId=next.id;}}else{const added=fcPurchaseAttachFiles(invoice,files);if(added.duplicate)fcPurchaseRenderStatus(`重复选择的文件已忽略 ${added.duplicate} 个；新文件已追加到当前单据。`);}e.target.value='';fcPurchaseRenderQueue();return;}const row=e.target.closest('[data-fc-purchase-line]');if(row&&e.target.matches('[data-pf="material_id"]')){const materials=[...fc.inventory,...fc.valuation],material=materials.find(x=>x.id===e.target.value);if(material){row.querySelector('[data-pf="product"]').value=material.material_name;row.querySelector('[data-pf="unit"]').value=material.unit;row.querySelector('[data-pf="spec"]').value=material.spec||'';}}if(e.target.closest('#fcPurchaseForm')){fcPurchaseSyncForm(e.target.closest('#fcPurchaseForm'));fcPurchaseUpdateTotal();}},true);
-   document.addEventListener('click',e=>{const add=e.target.closest('[data-action="fc-bulk-row-add"]'),remove=e.target.closest('[data-action="fc-bulk-row-remove"]');if(!add&&!remove)return;const form=e.target.closest('#fcBulkInventoryForm'),rows=form?.querySelector('#fcBulkInventoryRows');if(!rows)return;if(remove){remove.closest('.fc-bulk-inventory-row')?.remove();return;}const options=fc.inventory.map(x=>`<option value="${x.id}">${esc(x.material_name)} · ${esc(x.spec||x.unit)}</option>`).join('');rows.insertAdjacentHTML('beforeend',fcBulkInventoryRow(options));},true);
+   document.addEventListener('change',e=>{if(e.target.matches('#fcBulkInventoryForm [name="material_id"]')){const row=e.target.closest('.fc-bulk-inventory-row'),label=row?.querySelector('.fc-bulk-unmatched'),create=row?.querySelector('[data-action="fc-bulk-create-material"]');if(e.target.value){if(label)label.hidden=true;if(create)create.hidden=true;row.querySelector('[name="unmatched_name"]').value='';}return;}if(e.target.name==='business_source'){const form=e.target.closest('#fcOrderForm'),label=form?.querySelector('[data-channel-field]'),input=form?.elements.channel_customer_name;if(label)label.hidden=e.target.value!=='渠道';if(input)input.required=e.target.value==='渠道';return;}if(e.target.matches('[name$="_designer_id"],[name="workshop_lead_id"]')){const form=e.target.closest('#fcAssignForm'),mapping={store_designer_id:'store_designer_name',breakdown_designer_id:'breakdown_designer_name',workshop_lead_id:'workshop_lead_name'},target=form?.elements[mapping[e.target.name]];if(target&&e.target.value)target.value=e.target.selectedOptions[0]?.textContent||'';return;}if(e.target.id==='fcPurchaseGrouping'&&fc.purchaseDraft){fc.purchaseDraft.grouping=e.target.value;return;}if(e.target.name==='manual_total_mode'&&fc.purchaseDraft){const form=e.target.closest('#fcPurchaseForm');fcPurchaseSyncForm(form);fcPurchaseRenderQueue();return;}if(e.target.id==='fcPurchaseFiles'){const form=e.target.closest('#fcPurchaseForm'),draft=fc.purchaseDraft;if(!form||!draft)return;draft.grouping=document.getElementById('fcPurchaseGrouping')?.value||draft.grouping||'separate';fcPurchaseSyncForm(form);const invoice=fcPurchaseActive(),files=[...e.target.files];if(draft.grouping==='separate'&&(invoice.files.length>0||invoice.lines.some(x=>x.product)||invoice.supplier||invoice.bill_no)){for(const file of files){const next=fcPurchaseBlankInvoice(invoice.kind);next.files=[file];draft.invoices.push(next);draft.activeInvoiceId=next.id;}}else{const added=fcPurchaseAttachFiles(invoice,files);if(added.duplicate)fcPurchaseRenderStatus(`重复选择的文件已忽略 ${added.duplicate} 个；新文件已追加到当前单据。`);}e.target.value='';fcPurchaseRenderQueue();return;}const row=e.target.closest('[data-fc-purchase-line]');if(row&&e.target.matches('[data-pf="material_id"]')){const materials=[...fc.inventory,...fc.valuation],material=materials.find(x=>x.id===e.target.value);if(material){row.querySelector('[data-pf="product"]').value=material.material_name;row.querySelector('[data-pf="unit"]').value=material.unit;row.querySelector('[data-pf="spec"]').value=material.spec||'';}}if(e.target.closest('#fcPurchaseForm')){fcPurchaseSyncForm(e.target.closest('#fcPurchaseForm'));fcPurchaseUpdateTotal();}},true);
   document.addEventListener('change',e=>{if(e.target.name!=='kind')return;const form=e.target.closest('#fcCashForm'),stage=form?.querySelector('[data-cash-stage]'),sequence=form?.elements.sequence,show=e.target.value==='收款';if(stage)stage.hidden=!show;if(sequence){sequence.closest('label').hidden=!show;sequence.required=show;}},true);
   document.addEventListener('input',e=>{const form=e.target.closest('#fcPurchaseForm');if(!form)return;const row=e.target.closest('[data-fc-purchase-line]');if(row&&['quantity','unit_price'].includes(e.target.dataset.pf)){const q=Number(row.querySelector('[data-pf="quantity"]').value||0),p=Number(row.querySelector('[data-pf="unit_price"]')?.value||0),amount=row.querySelector('[data-pf-total]');if(amount)amount.textContent=fcMoney((q*p).toFixed(2));}fcPurchaseSyncForm(form);fcPurchaseUpdateTotal();},true);
-  document.addEventListener('click',e=>{if(e.target.closest('[data-action="close-modal"]')&&fc.purchaseDraft){fcPurchaseRelease(fc.purchaseDraft);fc.purchaseDraft=null;}},true);
-   document.addEventListener('change',e=>{if(e.target.matches('[data-hardware-brand]')){const field=e.target.closest('#fcConfigForm')?.querySelector('[data-custom-brand]');if(field)field.hidden=e.target.value!=='自定义';return;}if(e.target.matches('[data-fc-fixed-month]')){const value=e.target.value;if(!/^\d{4}-\d{2}$/.test(value))return;fc.financeMonth=value;fcRpc('factory_manager_fixed_costs_v2',{p_month:`${value}-01`}).then(rows=>{fc.fixed=rows;render()}).catch(err=>{fc.error=fcFail(err);render()});return;}const financeInput=e.target.closest('[data-fc-finance-month]');if(financeInput){const value=financeInput.value;if(!/^\d{4}-\d{2}$/.test(value))return;fc.financeMonth=value;fcRpc('owner_factory_payroll',{p_month:`${value}-01`}).then(rows=>{fc.payroll=rows;render()}).catch(err=>{fc.error=fcFail(err);render()});return;}const input=e.target.closest('[data-fc-month]');if(!input)return;const value=input.value;if(!/^\d{4}-\d{2}$/.test(value))return;fc.attendanceMonth=value;if(fcIsOwner())fcRpc('owner_factory_payroll',{p_month:`${value}-01`}).then(rows=>{fc.payroll=rows;render()}).catch(err=>{fc.error=fcFail(err);render()});else render();},true);
+  document.addEventListener('click',e=>{if(!e.target.closest('[data-action="close-modal"]'))return;if(fc.purchaseDraft){fcPurchaseRelease(fc.purchaseDraft);fc.purchaseDraft=null;}if(document.getElementById('fcMaterialForm')&&fc.bulkInventoryDraft)fc.bulkInventoryDraft=null;},true);
+   document.addEventListener('change',e=>{if(e.target.matches('[data-hardware-brand]')){const field=e.target.closest('#fcConfigForm')?.querySelector('[data-custom-brand]');if(field)field.hidden=e.target.value!=='自定义';return;}if(e.target.matches('[data-fc-fixed-month]')){const value=e.target.value;if(!/^\d{4}-\d{2}$/.test(value))return;fc.financeMonth=value;fcRpc('factory_manager_fixed_costs_v2',{p_month:`${value}-01`}).then(rows=>{fc.fixed=rows;render()}).catch(err=>{fc.error=fcFail(err);render()});return;}const financeInput=e.target.closest('[data-fc-finance-month]');if(financeInput){const value=financeInput.value;if(!/^\d{4}-\d{2}$/.test(value))return;fc.financeMonth=value;fcRpc('owner_factory_payroll',{p_month:`${value}-01`}).then(rows=>{fc.payroll=rows;render()}).catch(err=>{fc.error=fcFail(err);render()});return;}const input=e.target.closest('[data-fc-month]');if(!input)return;const value=input.value;if(!/^\d{4}-\d{2}$/.test(value))return;fc.attendanceMonth=value;if(fcIsOwner())Promise.all([fcRpc('owner_factory_payroll',{p_month:`${value}-01`}),fcRpc('owner_factory_payroll_adjustment_targets',{p_month:`${value}-01`})]).then(([rows,targets])=>{fc.payroll=rows;fc.payrollTargets=targets;render()}).catch(err=>{fc.error=fcFail(err);render()});else render();},true);
   document.addEventListener('submit',async e=>{const f=e.target;if(!f.id?.startsWith('fc'))return;e.preventDefault();e.stopImmediatePropagation();if(f.dataset.submitting==='true')return;f.dataset.submitting='true';f.querySelectorAll('button[type="submit"]').forEach(b=>b.disabled=true);const d=new FormData(f);
     try{
       if(f.id==='fcPurchaseForm'){
@@ -6694,7 +7337,7 @@ window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
       if(f.id==='fcCostForm')await fcSubmitRpc('owner_record_factory_order_cost',{p_order_id:d.get('order_id'),p_cost_category:d.get('category'),p_amount:Number(d.get('amount')),p_note:d.get('note')||'',p_request_id:fcReq()});
       if(f.id==='fcCostReverseForm')await fcSubmitRpc('owner_reverse_factory_order_cost',{p_entry_id:d.get('entry_id'),p_note:d.get('note'),p_request_id:fcReq()});
       if(f.id==='fcProcessForm'){const operatorName=String(d.get('operator_name')||'').trim();if(!operatorName)throw Error('请填写更新人姓名');const order=fc.orders.find(x=>x.id===d.get('order_id'))||fc.safeOrders.find(x=>x.id===d.get('order_id')),status=d.get('process')==='已完工'&&fcIsOwner()?'已完工':d.get('status')||order?.status||'进行中';await fcSubmitRpc(role==='foreman'?'factory_foreman_update_work_order_named':'factory_update_work_order_named',{p_order_id:d.get('order_id'),p_process:d.get('process'),p_status:status,p_operator_name:operatorName,p_request_id:fcReq()});}
-      if(f.id==='fcMaterialForm')await fcSubmitRpc('factory_save_material',{p_material_id:null,p_material_code:d.get('material_code'),p_material_name:d.get('material_name'),p_category:d.get('category'),p_cost_category:d.get('cost_category'),p_spec:d.get('spec')||'',p_unit:d.get('unit'),p_safety_stock:Number(d.get('safety_stock')||0),p_request_id:fcReq()});
+      if(f.id==='fcMaterialForm'){const materialName=d.get('material_name');await fcSubmitRpc('factory_save_material',{p_material_id:null,p_material_code:d.get('material_code'),p_material_name:materialName,p_category:d.get('category'),p_cost_category:d.get('cost_category'),p_spec:d.get('spec')||'',p_unit:d.get('unit'),p_safety_stock:Number(d.get('safety_stock')||0),p_request_id:fcReq()});if(fc.bulkInventoryDraft)fcBulkRestore(fc.bulkInventoryDraft,materialName);}
       if(f.id==='fcMovementForm')await fcSubmitRpc('factory_record_inventory_movement',{p_movement_date:fcToday(),p_movement_type:d.get('movement_type'),p_material_id:d.get('material_id'),p_quantity:Number(d.get('quantity')),p_unit_price:Number(d.get('unit_price')||0),p_supplier_source:d.get('supplier_source')||'',p_order_id:d.get('order_id')||null,p_purpose:d.get('purpose')||'',p_handled_by:d.get('handled_by')||'',p_note:d.get('note')||'',p_reverses_movement_id:d.get('reverses_movement_id')||null,p_request_id:fcReq()});
       if(f.id==='fcBulkInventoryForm'){const material_ids=d.getAll('material_id'),quantities=d.getAll('quantity'),prices=d.getAll('unit_price'),notes=d.getAll('line_note'),rows=material_ids.map((material_id,i)=>({material_id,quantity:Number(quantities[i]),unit_price:Number(prices[i]||0),supplier_source:d.get('supplier_source')||'',handled_by:d.get('handled_by')||'',note:notes[i]||d.get('note')||''}));if(!rows.length||rows.some(x=>!x.material_id||x.quantity<=0))throw Error('请为每行选择材料并填写大于 0 的入库数量');await fcSubmitRpc('factory_record_inventory_movement_batch',{p_movement_date:d.get('movement_date'),p_rows:rows,p_request_id:fcReq()});}
       if(f.id==='fcAttendanceForm'){
@@ -6702,11 +7345,13 @@ window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
         await fcSubmitRpc('factory_record_attendance',{p_employee_id:d.get('employee_id'),p_work_date:d.get('work_date'),p_job:d.get('job')||'',p_status:d.get('attendance_status'),p_hours:Number(d.get('hours')||0),p_work_content:d.get('work_content')||'',p_piece_quantity:Number(d.get('piece_quantity')||0),p_overtime_hours:Number(d.get('overtime_hours')||0),p_allocations:allocations,p_note:d.get('note')||'',p_request_id:fcReq()});
       }
       if(f.id==='fcEmployeeForm')await fcSubmitRpc('owner_save_factory_employee',{p_employee_id:null,p_employee_name:d.get('employee_name'),p_job:d.get('job')||'',p_pay_method:d.get('pay_method'),p_pay_rate:Number(d.get('pay_rate')),p_employment_status:d.get('employment_status'),p_note:d.get('note')||'',p_effective_from:d.get('effective_from'),p_request_id:fcReq()});
+      if(f.id==='fcPayrollAdjustForm')await fcSubmitRpc('owner_adjust_factory_payroll',{p_snapshot_id:d.get('snapshot_id'),p_amount:Number(d.get('amount')),p_note:d.get('note'),p_request_id:fcReq()});
+      if(f.id==='fcPayrollExtraForm')await fcSubmitRpc('factory_record_public_cost_v2',{p_cost_month:`${d.get('month')}-01`,p_category:'固定人工',p_item:String(d.get('item')||'工资特殊情况').trim(),p_amount:Number(d.get('amount')),p_cost_mode:'monthly',p_note:d.get('note')||'',p_request_id:fcReq()});
       if(f.id==='fcFixedForm')await fcSubmitRpc('factory_record_public_cost_v2',{p_cost_month:`${d.get('month')}-01`,p_category:String(d.get('category')||'').trim(),p_item:String(d.get('item')||'').trim(),p_amount:Number(d.get('amount')),p_cost_mode:d.get('cost_mode'),p_note:d.get('note')||'',p_request_id:fcReq()});
       if(f.id==='fcScheduleForm')await fcSubmitRpc('factory_update_order_delivery',{p_order_id:d.get('order_id'),p_delivery_date:d.get('delivery_date'),p_note:d.get('note')||'',p_request_id:fcReq()});
       if(f.id==='fcConfigForm'){await fcSaveConfigProfile(f,d);return;}
       if(f.id==='fcAssignForm')await fcSubmitRpc('owner_assign_factory_work_order_v2',{p_order_id:d.get('order_id'),p_store_designer_id:d.get('store_designer_id')||null,p_breakdown_designer_id:d.get('breakdown_designer_id')||null,p_workshop_lead_id:d.get('workshop_lead_id')||null,p_store_designer_name:d.get('store_designer_name')||'',p_breakdown_designer_name:d.get('breakdown_designer_name')||'',p_workshop_lead_name:d.get('workshop_lead_name')||'',p_request_id:fcReq()});
-      if(f.id==='fcCashForm')await fcSubmitRpc('factory_record_cash_entry',{p_order_id:d.get('order_id'),p_kind:d.get('kind'),p_date:d.get('date'),p_amount:Number(d.get('amount')),p_method:d.get('method'),p_counterparty:d.get('counterparty'),p_note:d.get('note')||'',p_stage:d.get('kind')==='收款'?d.get('stage'):null,p_sequence:d.get('kind')==='收款'?Number(d.get('sequence')||1):null,p_request_id:fcReq()});
+      if(f.id==='fcCashForm'){const orderId=d.get('order_id'),files=[...f.elements.proof_files.files].filter(x=>x.size);if(!files.length)await fcSubmitRpc('factory_record_cash_entry',{p_order_id:orderId,p_kind:d.get('kind'),p_date:d.get('date'),p_amount:Number(d.get('amount')),p_method:d.get('method'),p_counterparty:d.get('counterparty'),p_note:d.get('note')||'',p_stage:d.get('kind')==='收款'?d.get('stage'):null,p_sequence:d.get('kind')==='收款'?Number(d.get('sequence')||1):null,p_request_id:fcReq()});else{const docs=await fcCashUploadProofs(f,orderId),requestId=f.dataset.requestId||(f.dataset.requestId=fcReq());try{await fcSubmitRpc('factory_record_cash_entry_with_proofs',{p_order_id:orderId,p_kind:d.get('kind'),p_date:d.get('date'),p_amount:Number(d.get('amount')),p_method:d.get('method'),p_counterparty:d.get('counterparty'),p_note:d.get('note')||'',p_stage:d.get('kind')==='收款'?d.get('stage'):null,p_sequence:d.get('kind')==='收款'?Number(d.get('sequence')||1):null,p_documents:docs,p_request_id:requestId});}catch(error){const paths=docs.map(x=>x.storage_path);fcClient().storage.from('factory-payment-proofs').remove(paths).catch(()=>{});f.dataset.requestId='';throw error;}}}
       if(f.id==='fcOutsourceForm')await fcSubmitRpc('factory_save_outsource_check',{p_order_id:d.get('order_id'),p_job_id:null,p_process:d.get('process'),p_supplier:d.get('supplier')||'',p_planned_date:d.get('planned_date')||null,p_received_date:d.get('received_date')||null,p_status:d.get('status'),p_quality_result:d.get('quality_result')||'',p_actual_cost:d.get('actual_cost')?Number(d.get('actual_cost')):null,p_note:d.get('note')||'',p_request_id:fcReq()});
       if(f.id==='fcSiteNoteForm')await fcSubmitRpc('factory_record_order_site_note',{p_order_id:d.get('order_id'),p_kind:d.get('kind'),p_content:d.get('content'),p_request_id:fcReq()});
       if(f.id==='fcDocumentForm'){
