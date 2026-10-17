@@ -14,6 +14,7 @@ create table if not exists factory_private.order_cash_entry_documents (
 );
 alter table factory_private.order_cash_entry_documents owner to postgres;
 revoke all on factory_private.order_cash_entry_documents from public, anon, authenticated;
+grant select,insert on factory_private.order_cash_entry_documents to anju_custom_executor;
 
 insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
 values ('factory-payment-proofs','factory-payment-proofs',false,20971520,array['image/jpeg','image/png','image/webp','application/pdf'])
