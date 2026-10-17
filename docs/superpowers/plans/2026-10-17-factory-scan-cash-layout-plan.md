@@ -83,8 +83,12 @@ Files: generated app/framework-preview.js, app/framework-preview.css, share-prev
 
 - [x] 运行既有同步脚本；读取输出并确认 JavaScript 语法检查成功。
 - [x] 确认 migration 内容与新增权限规则一致，不含敏感值。
-- [ ] 提交到功能分支并推送 GitHub；将同一提交快进到 main，触发 Netlify Git 部署。
-- [ ] 读取 Netlify deploy 状态，并通过生产 URL 检查站点资源版本可访问。
+- [x] 将实现提交推送到 GitHub `main`，留作代码备份。
+- [x] 确认 Netlify 部署 `6ad306c5708229a03591ec05` 状态为 ready，并通过生产 URL 核对新资源版本可访问。
+
+## 部署记录
+
+2026-10-17：GitHub `main` 更新至实现提交 `d41c8a1`。推送后生产站点仍返回旧资源版本，因此本次从同一仓库工作目录上传到已连接的 Netlify 站点完成发布；新部署状态为 `ready`，生产资源版本为 `20261017132149`。本次网站内容已发布；Netlify 是否会对今后的 Git 提交自动构建，仍需在项目控制台核实。
 
 ## Verification note
 
