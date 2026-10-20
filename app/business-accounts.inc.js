@@ -1,3 +1,8 @@
+// Domain: Shared / Overview
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Business accounts and owner overview dashboards.
+
 // Independent business presentation; monetary aggregates come from the database.
 const yjAccountLabels={reno:'整装',custom:'定制',factory:'工厂',shared:'共用'};
 function yjAccountRows(rows,line,kind='month'){

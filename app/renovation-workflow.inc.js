@@ -1,3 +1,8 @@
+// Domain: Renovation
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Renovation site workflow and stage management.
+
   // The same household records feed quotation, payments and construction views.
   rxState.renovation??={categories:['基装','主材','辅材','人工'],products:[],contracts:{}};
   rxState.renovation.directCosts??=[];

@@ -1,0 +1,14 @@
+{
+  "name": "yijiang-business-suite",
+  "version": "0.1.0",
+  "private": true,
+  "description": "艺匠全屋定制经营与工厂协同平台 · 本地构建脚本依赖",
+  "scripts": {
+    "check": "node --check framework-preview.js",
+    "build": "powershell -NoProfile -ExecutionPolicy Bypass -File ./sync-quote-preview.ps1",
+    "preview": "powershell -NoProfile -ExecutionPolicy Bypass -File ./start-local-preview.ps1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

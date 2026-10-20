@@ -1,3 +1,8 @@
+// Domain: Factory
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Factory operations and job tracking.
+
   // Factory operations: one household, stock ledger, attendance and cash records.
   const foKey='anju-factory-operations-v1';
   const foEmpty={items:[],moves:[],payments:[],cash:[],employees:[],attendance:[],requests:[],outsources:[],plans:[]};

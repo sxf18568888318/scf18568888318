@@ -1,3 +1,8 @@
+// Domain: Renovation
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Renovation quotation workshop (base + major material quotes).
+
   // Included inside the preview's existing closure; keeps the current customer and product data.
   let workshopKind='base',workshopCostVisible=false,workshopDimensions={},workshopMeasureRow=null,workshopPickerGroup='基装',workshopRestore=null;
   let workshopRules={management:0,tax:0,template:'standard'},workshopChanges=[];

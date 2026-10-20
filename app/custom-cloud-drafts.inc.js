@@ -1,3 +1,8 @@
+// Domain: Custom Cabinetry
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Custom cloud quotation drafts UI.
+
 // Custom full-house quotation drafts are persisted through the scoped API.
 // The browser cache is never treated as the saved source of truth.
 {

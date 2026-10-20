@@ -1,3 +1,8 @@
+// Domain: Shared
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Practical usability enhancements across modules.
+
   // Business ownership is explicit for new records. Legacy mixed contacts stay in
   // renovation pending correction; their existing quotations remain untouched.
   function uxCustomerDomain(c){return ['whole','custom'].includes(c.businessModule)?c.businessModule:c.type==='全屋定制'?'custom':'whole'}

@@ -1,3 +1,8 @@
+// Domain: Shared / Renovation / Custom
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Core quotation engine shared by renovation and custom modules.
+
   // Cabinetry quotation: shared workbench layout, separate drafts and cabinetry rules.
   const cqStorage='anju-custom-quotation-v1';
   let cqState={draft:null,changes:[],defaults:{validity:'7天'},template:'retail'},cqSection='home',cqRoom='入户',cqRooms=['入户','客厅','餐厅','主卧','次卧','厨房','阳台','书房','卫生间'],cqGroup='柜体定制',cqEditRow=null,cqCostVisible=false,cqLastDomain='';

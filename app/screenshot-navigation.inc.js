@@ -1,3 +1,8 @@
+// Domain: Shared
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Screenshot navigation helpers.
+
   // Routes mirror sidebar destinations and keep the selected business and filter.
   function rxBusinessCustomers(){return sampleCustomers.filter(c=>(role==='owner'||c.owner==='设计师A')&&(['whole','custom'].includes(module)?uxCustomerDomain(c)===module:true))}
   function rxCustomerFilter(){let rows=rxBusinessCustomers();const stage=$('#stageFilter')?.value||'',business=$('#businessFilter')?.value||'',search=($('#customerSearch')?.value||'').trim().toLowerCase();if(customerDrill==='followup')rows=rows.filter(c=>c.nextAt||c.due&&c.due!=='未安排');if(customerDrill==='unassigned')rows=rows.filter(c=>!c.owner||c.owner==='未分配');if(customerDrill==='new')rows=rows.filter(c=>String(c.id).startsWith('C-'));if(customerDrill==='pending')rows=rows.filter(c=>['线索','量房沟通','报价中'].includes(c.stage));else if(customerDrill.startsWith('stage-'))rows=rows.filter(c=>c.stage===customerDrill.slice(6));return rows.filter(c=>(!stage||c.stage===stage)&&(!business||c.type===business)&&(!search||[c.name,c.community,c.source].join(' ').toLowerCase().includes(search)))}

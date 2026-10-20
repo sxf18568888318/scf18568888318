@@ -1,3 +1,8 @@
+// Domain: Shared
+// Type: logic
+// Note: Pure logic used by workflow modules.
+// Description: Workflow restoration logic helpers.
+
 // Small deterministic helpers shared by restored cloud workflows and tests.
 (function (root) {
   function cents(value) {

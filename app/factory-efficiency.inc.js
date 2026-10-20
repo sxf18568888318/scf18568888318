@@ -1,3 +1,8 @@
+// Domain: Factory
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Factory efficiency tracking.
+
   // Practical factory coordination: readiness, due dates, blockers and reusable offcuts.
   for (const key of ['blockers','offcuts','offcutMoves']) {
     if (!Array.isArray(foState[key])) foState[key] = [];

@@ -1,3 +1,8 @@
+// Domain: Shared
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Role-based access gates.
+
   // Final role checks run after every feature include so specialized renderers cannot bypass them.
   const rgCanAccessPrevious = canAccessPage;
   canAccessPage = function (moduleId, pageId) {

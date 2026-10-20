@@ -1,3 +1,8 @@
+// Domain: Factory
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Factory document version management.
+
   // Versioned production references. Original binaries remain in the existing local file store.
   if(!Array.isArray(foState.productionDocuments))foState.productionDocuments=[];
   const fdKinds=['生产图纸','客户报价单','柜门 / 工艺确认','其他生产资料'];

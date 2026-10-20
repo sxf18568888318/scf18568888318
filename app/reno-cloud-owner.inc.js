@@ -1,3 +1,8 @@
+// Domain: Renovation
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Cloud owner view for renovation business.
+
 // Step 2: owner renovation pages read and write the live Supabase API.
 // These overrides are owner-only; the existing role-specific pages remain intact.
 {

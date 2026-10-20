@@ -1,3 +1,8 @@
+// Domain: Shared
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Requested feature refinements across modules.
+
   // Screenshot requests, 2026-10-06: one-house entry and structured local imports.
   let rxAllRooms=true,rxImport=null,rxStockCategory='',rxStockSearch='',rxOrderView='overview';
   const rxCabinets=['衣柜','橱柜','餐边柜','鞋柜','阳台柜','主卧柜','次卧柜','儿童房柜'];

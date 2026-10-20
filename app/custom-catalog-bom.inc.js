@@ -1,3 +1,8 @@
+// Domain: Custom Cabinetry
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Custom catalog BOM user interface.
+
   // Secure catalog + multi-line custom quotation pages. This include is
   // intentionally isolated from the renovation quotation workflow.
   const customBomLogic = window.anjuCustomBomLogic;

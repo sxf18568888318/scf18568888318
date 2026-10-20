@@ -1,3 +1,8 @@
+// Domain: Renovation
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Cloud staff view for renovation business.
+
 // Step 3 renovation workspaces for designers and foremen. Only role-safe API
 // projections are read here; all writes remain behind the existing RPC ACLs.
 {

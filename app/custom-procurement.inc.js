@@ -1,3 +1,8 @@
+// Domain: Custom Cabinetry
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Custom cabinetry procurement management.
+
   // Cloud-only custom procurement, inventory, and material issue desk.
   pages.custom.push(['custom-procurement', '采购与库存', '▥'], ['custom-finance', '定制财务', '￥']);
   const cpPageIds = ['custom-procurement'];

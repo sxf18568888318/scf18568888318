@@ -1,3 +1,8 @@
+// Domain: Custom Cabinetry
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Custom cabinetry quote refinements.
+
   // Reusable customer configurations; supplier purchase prices never seed sales rates.
   cqState.schemes = Array.isArray(cqState.schemes) ? cqState.schemes : [];
   function crClone(value){return JSON.parse(JSON.stringify(value))}

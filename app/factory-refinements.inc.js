@@ -1,3 +1,8 @@
+// Domain: Factory
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Factory module refinements.
+
   // Reversible cost corrections and summary transfer, with retained audit records.
   const foCoreAction=action;action=function(name,btn){const id=btn.dataset.id||'',j=foJob();
     if(name==='fo-ledger-void'){const [kind,recordId]=id.split(':'),record=(kind==='payment'?foState.payments:foState.cash).find(x=>x.id===recordId);if(!record||record.void)return;openModal('更正录入错误 · 保留记录',foForm('foLedgerVoidForm',`<input type="hidden" name="kind" value="${esc(kind)}"><input type="hidden" name="recordId" value="${esc(recordId)}"><p class="fo-wide">${esc(record.date)} · ${esc(record.type||record.category)} · ${money(record.amount)}。作废只用于录错账目，记录仍保留；实际退款应登记退款。</p>`+foArea('note','填写更正原因'),'作废错误记录'));return}

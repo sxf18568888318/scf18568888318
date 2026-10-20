@@ -1,3 +1,8 @@
+// Domain: Factory / Renovation
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Supplier invoice workbench for factory and renovation costs.
+
   // A queue retains each supplier invoice and its original attachments. Saving
   // revisions posts category deltas; actual cash entries are never overwritten.
   let uxBills=null,uxBillCategory='';

@@ -1,3 +1,8 @@
+// Domain: Factory
+// Type: include
+// Note: Concatenated into framework-preview.js
+// Description: Factory cloud: orders, costs, inventory, payroll and cash flow.
+
 // Factory production and finance module. All values are read from the protected API.
 {
   const fc = { loading:false, loaded:false, error:'', orders:[], safeOrders:[], employees:[], safeEmployees:[], attendance:[], inventory:[], valuation:[], movements:[], ownerMovements:[], purchaseInvoices:[], directPurchaseCosts:[], fixed:[], payroll:[], monthly:[], yearly:[], costEntries:[],costEntriesOrder:'',costEntriesLoading:false,costEntriesError:'',dossier:null,dossierOrder:'',assignmentUsers:[],selectedOrder:'',attendanceMonth:'',financeMonth:'',accounts:[],cashEntries:[],attendanceCosts:[],history:[],historyOrder:'',purchaseDraft:null,configRequestIds:new Map(),productionFilter:'生产中',inventoryCategory:'五金',attendanceExpandedDate:'',bulkInventoryDraft:null,payrollTargets:[] };

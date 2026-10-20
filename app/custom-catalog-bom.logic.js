@@ -1,3 +1,8 @@
+// Domain: Custom Cabinetry
+// Type: logic
+// Note: Pure logic used by custom catalog modules.
+// Description: Custom catalog BOM logic helpers.
+
 (() => {
   'use strict';
   const units = Object.freeze({

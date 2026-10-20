@@ -1,3 +1,8 @@
+// Domain: Shared / Custom Cabinetry
+// Type: logic
+// Note: Pure logic used by custom quote modules.
+// Description: Cloud quotation draft data helpers.
+
 /* Small shared debounce/flush helper for cloud-backed quotation drafts. */
 window.__YJCloudDraftQueue = function createYJCloudDraftQueue({delay=900, save, onState=()=>{}}={}) {
   if (typeof save !== 'function') throw new TypeError('Cloud draft save callback is required');
