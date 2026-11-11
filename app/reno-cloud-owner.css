@@ -41,3 +41,13 @@
 @media(max-width:600px){#foRenoProfileForm{grid-template-columns:1fr}#foRenoProfileForm label.full{grid-column:auto}}
 /* Keep quote metadata in one scan line on desktop; reflow only on compact screens. */
 @media(min-width:1200px){.reno-quote-meta{grid-template-columns:repeat(10,minmax(0,1fr));gap:5px;padding:12px}.reno-quote-meta label{font-size:11px}.reno-quote-meta .field{font-size:12px;padding:7px 5px}}
+
+/* 空间页签：整装报价 空间→工种→明细 三级 */
+.reno-room-tabs{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:2px 0 14px}
+.reno-room-tab{display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 14px;border:1px solid var(--line,#e2e5e9);background:var(--surface,#fff);border-radius:10px;cursor:pointer;font-size:13px;color:var(--ink,#20242a)}
+.reno-room-tab.active{border-color:#b03a2e;background:#fdf3f2;font-weight:700}
+.reno-room-tab small{font-size:11px;color:var(--muted,#68717d);font-weight:400}
+.reno-room-tab-actions{display:inline-flex;gap:6px;margin-left:6px}
+.reno-room[hidden]{display:none}
+.rc-print-trade{margin:10px 0 4px;font-size:14px}
+.rc-print-terms{margin-top:14px;font-size:12px;color:var(--muted,#4a525c);line-height:1.8}
