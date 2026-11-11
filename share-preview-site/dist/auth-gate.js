@@ -44,7 +44,7 @@
     document.body.insertAdjacentHTML('afterbegin', `
       <div id="authGate" class="auth-gate" role="dialog" aria-modal="true" aria-labelledby="authGateTitle">
         <div class="auth-card">
-          <div class="auth-brand"><img class="brand-icon" src="assets/brand/yijiang-icon-512.png?v=20261111233908" alt="艺匠全屋定制"><div><strong>艺匠全屋定制</strong><small>整装 · 定制 · 工厂</small></div></div>
+          <div class="auth-brand"><img class="brand-icon" src="assets/brand/yijiang-icon-512.png?v=20261112001009" alt="艺匠全屋定制"><div><strong>艺匠全屋定制</strong><small>整装 · 定制 · 工厂</small></div></div>
           <div class="auth-kicker">员工登录</div>
           <h1 id="authGateTitle">登录工作台</h1>
           <p class="auth-help">使用公司分配的账号密码登录，系统会按角色显示可用模块。</p>
