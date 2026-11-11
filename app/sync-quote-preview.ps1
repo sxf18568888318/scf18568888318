@@ -47,7 +47,14 @@ $jsSources = @(
     'factory-refinements.inc.js'
     'factory-efficiency.inc.js'
     'factory-document-versions.inc.js'
+    # Factory cloud block: these 6 fragments MUST stay adjacent and in this order.
+    # Part 1 opens the block, Part 6 closes it. Splitting them breaks the build.
     'factory-cloud.inc.js'
+    'factory-cloud-orders.inc.js'
+    'factory-cloud-attendance.inc.js'
+    'factory-cloud-finance.inc.js'
+    'factory-cloud-forms.inc.js'
+    'factory-cloud-runtime.inc.js'
     # Custom cabinetry business
     'custom-quote-refinements.inc.js'
     'custom-catalog-bom.logic.js'

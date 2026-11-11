@@ -57,7 +57,14 @@ app/
   factory-refinements.inc.js
   factory-efficiency.inc.js
   factory-document-versions.inc.js
-  factory-cloud.inc.js
+  # 工厂云端块：以下 6 个是【拼接片段】，必须相邻且按此顺序排列
+  # Part 1 打开代码块，Part 6 闭合代码块；单独打开某个文件语法不完整属于正常现象
+  factory-cloud.inc.js               # Part 1/6 核心状态、数据加载、公共工具
+  factory-cloud-orders.inc.js        # Part 2/6 首页看板、订单分类、订单详情
+  factory-cloud-attendance.inc.js    # Part 3/6 旧库存页、考勤登记、人员工资
+  factory-cloud-finance.inc.js       # Part 4/6 月/年净利、经营账户
+  factory-cloud-forms.inc.js         # Part 5/6 弹窗表单、采购单识别、提交、导出
+  factory-cloud-runtime.inc.js       # Part 6/6 库存/固定费用页、路由、权限、事件监听
 
   # 独立入口（不参与拼接）
   auth-gate.js                       # 登录认证
@@ -127,11 +134,17 @@ cd app
 | 全屋定制报价 | `custom-quote-workshop.inc.js` | 定制柜体报价核心 |
 | 全屋定制产品库 / BOM | `custom-catalog-bom.inc.js` + `.logic.js` | 材料、五金目录 |
 | 全屋定制采购 | `custom-procurement.inc.js` | 采购单管理 |
-| 工厂订单 / 生产任务 | `factory-cloud.inc.js` | 工厂核心，最大文件 |
-| 工厂库存 | `factory-cloud.inc.js` | 五金与辅料 |
-| 工厂考勤 / 工资 | `factory-cloud.inc.js` | 工人、薪资 |
-| 工厂费用 / 利润 | `factory-cloud.inc.js` + `business-accounts.inc.js` | 成本、收款、利润 |
-| 采购单识别 / 录入 | `bill-workbench.inc.js` | 单据 OCR、核对 |
+| 工厂首页 / 生产总览 | `factory-cloud-orders.inc.js` | fcHome、今日待办 |
+| 工厂订单分类 / 订单详情档案 | `factory-cloud-orders.inc.js` | fcProduction、fcOrderDetail |
+| 工厂云端数据加载 / 公共工具 | `factory-cloud.inc.js` | fcLoad、fcRpc、fcMoney 等 |
+| 工厂库存（五金 / 辅料） | `factory-cloud-runtime.inc.js` | fcInventory；旧版在 `factory-cloud-attendance.inc.js` |
+| 工厂批量入库 / 板材单 / 五金单 | `factory-cloud-forms.inc.js` | fcBulk*、fcPurchase* 全套 |
+| 工厂考勤 / 人员工资 | `factory-cloud-attendance.inc.js` | fcAttendance、fcPayroll |
+| 工厂固定费用登记 | `factory-cloud-runtime.inc.js` | fcFixedCosts |
+| 工厂月 / 年净利 | `factory-cloud-finance.inc.js` | fcFinance |
+| 工厂收付款 / 凭证 / 导出 | `factory-cloud-forms.inc.js` | fcCashUploadProofs、fcExport |
+| 工厂菜单 / 权限 / 按钮事件 | `factory-cloud-runtime.inc.js` | pages.factory、render、事件监听 |
+| 采购单识别 / 录入（整装） | `bill-workbench.inc.js` | 单据 OCR、核对 |
 | 登录界面 / 权限 | `auth-gate.js` + `role-gates.inc.js` | 不参与拼接 |
 | 账号管理弹窗 | `account-admin.js` | 不参与拼接 |
 
@@ -147,6 +160,8 @@ cd app
      - `/* Room-based quotation workspace. */`
 4. **改完后必跑构建脚本**，确认 JS 语法检查通过
 5. **提交前检查 git status**：只应看到源文件改动，不要手动编辑 `framework-preview.js`
+6. **工厂端 6 个片段文件必须相邻且保持顺序**（见 `sync-quote-preview.ps1` 的 `$jsSources`），
+   Part 1 打开代码块、Part 6 闭合；中间插入其他文件或调换顺序会导致构建失败
 
 ## 六、给 Codex / AI 的提示模板
 
@@ -170,12 +185,19 @@ A: 不可以。下次跑脚本时，你的改动会被源文件重新覆盖。
 
 A: 可以临时在浏览器开发者工具里改，或者临时改 `framework-preview.js` 看效果。但确认方案后，**必须**把改动回写到对应的 `.inc.js` 源文件，否则下次构建会丢失。
 
-### Q: `factory-cloud.inc.js` 太大了，能不能拆？
+### Q: 单独打开某个 `factory-cloud-*.inc.js` 文件，编辑器报语法错误？
 
-A: 这是后续重构目标。当前阶段先用本手册规范修改流程；等业务稳定后，再考虑把它拆成更小的模块文件。
+A: 正常现象。这 6 个文件是**同一个代码块的拼接片段**，不是独立 JS 文件：
+Part 1 里有一个 `{` 开头，Part 6 末尾才有对应的 `}`。只有按 `sync-quote-preview.ps1`
+的顺序拼接后才是完整代码。不要单独对它们跑 `node --check`，构建脚本会检查最终产物。
+
+### Q: 工厂端已经拆好了吗？
+
+A: 已拆分。原 `factory-cloud.inc.js`（126KB）按函数边界切成 6 个片段，
+拼接顺序不变、可执行代码零改动。改功能时按第四节速查表定位对应片段即可。
 
 ## 八、后续优化方向
 
-1. **短期**：继续按本手册规范开发，减少改错文件的情况。
-2. **中期**：将 `factory-cloud.inc.js` 等超大文件按功能拆小（生产、库存、考勤、财务）。
+1. **短期**：按本手册规范开发；工厂端已拆分，接下来可继续规范门店端。
+2. **中期**：门店端（整装 / 全屋定制）同样存在超大文件，可按相同方式拆分。
 3. **长期**：引入 ES modules + Vite，彻底替换 PowerShell 拼接脚本。
