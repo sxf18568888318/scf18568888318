@@ -1,5 +1,10 @@
 (() => {
   'use strict';
+  // Include fragments share this closure. A few of them touch shared state at
+  // top level before the fragment that declares it, which would throw a
+  // temporal-dead-zone error in the concatenated bundle. Pre-seed those
+  // variables here; the owning fragment re-assigns them later.
+  let rxState = { installments: {}, periodCosts: [] };
   const roles={owner:'老板/管理者',sales:'销售/设计师',foreman:'工长/项目负责人',factory:'工厂负责人'};
   const modules=[
     {id:'all',name:'经营总览',glyph:'⌂',roles:['owner']},
@@ -1031,7 +1036,11 @@ window.__YJCustomDraftPayload = function serializeCustomDraft(q) {
   let foState;try{foState={...foEmpty,...JSON.parse(localStorage.getItem(foKey)||'{}')}}catch(_){foState=structuredClone(foEmpty)}
   let foMonth=new Date().toLocaleDateString('sv-SE').slice(0,7),foSearch='',foSource='',foStatus='';
   const foAverage=x=>Math.round((Number(x)||0)*1000000)/1000000;
-  const foDate=()=>new Date().toLocaleDateString('sv-SE'),foId=()=>`FO-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,foN=x=>Math.round((Number(x)||0)*100)/100;
+  // Function declarations are hoisted across the whole concatenated closure,
+  // so earlier include fragments can call these helpers at top level.
+  function foDate(){return new Date().toLocaleDateString('sv-SE')}
+  function foId(){return `FO-${Date.now()}-${Math.random().toString(36).slice(2,7)}`}
+  function foN(x){return Math.round((Number(x)||0)*100)/100}
   const foBtn=(label,act,id='',primary=false)=>`<button type="button" class="btn ${primary?'primary':''}" data-action="${act}" data-id="${esc(id)}">${label}</button>`;
   const foSelect=(name,label,opts,value='')=>`<label>${label}<select class="field" name="${name}">${opts.map(x=>{const v=Array.isArray(x)?x[0]:x,t=Array.isArray(x)?x[1]:x;return `<option value="${esc(v)}" ${String(v)===String(value)?'selected':''}>${esc(t)}</option>`}).join('')}</select></label>`;
   const foField=(name,label,value='',type='text',required=false)=>`<label>${label}<input class="field" name="${name}" type="${type}" value="${esc(value)}" ${required?'required':''} ${type==='number'?'min="0" step="0.01"':''}></label>`;
@@ -2770,7 +2779,7 @@ async function fcPurchaseUpload(invoice){const client=fcClient();if(!client)thro
   document.addEventListener('input',e=>{if(e.target.closest('#rxAttendanceRows'))rxAttendanceAmounts()},true);
 
   // Customer quotes and installment receipts share the customer's existing ledger.
-  const rxKey='anju-ui-refinements-v1';let rxState={installments:{},periodCosts:[]};
+  const rxKey='anju-ui-refinements-v1';rxState={installments:{},periodCosts:[]};
   try{rxState={...rxState,...JSON.parse(localStorage.getItem(rxKey)||'{}')}}catch{}
   function rxPersist(){localStorage.setItem(rxKey,JSON.stringify(rxState))}
   const rxLegacyMatch=(text,c)=>[c.name,`${c.name} · ${c.community}`].includes(String(text||'').trim());
@@ -3263,5 +3272,6 @@ const yjAccountNotice='本页只列本业务。固定成本按已有归属列示
   mobileNavBackdrop?.addEventListener('click',()=>setMobileNavOpen(false));
   document.addEventListener('click',event=>{if(event.target.closest('[data-module],[data-page],[data-route]'))setMobileNavOpen(false)},true);
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.body.classList.contains('mobile-nav-open')){setMobileNavOpen(false);mobileNavToggle?.focus()}});
-  if (window.anjuAuth?.demoMode) render();
+  const demoRequested = new URLSearchParams(location.search).get('demo') === '1';
+  if (window.anjuAuth?.demoMode || demoRequested) render();
 })();

@@ -1,5 +1,10 @@
 (() => {
   'use strict';
+  // Include fragments share this closure. A few of them touch shared state at
+  // top level before the fragment that declares it, which would throw a
+  // temporal-dead-zone error in the concatenated bundle. Pre-seed those
+  // variables here; the owning fragment re-assigns them later.
+  let rxState = { installments: {}, periodCosts: [] };
   const roles={owner:'老板/管理者',sales:'销售/设计师',foreman:'工长/项目负责人',factory:'工厂负责人'};
   const modules=[
     {id:'all',name:'经营总览',glyph:'⌂',roles:['owner']},
@@ -285,5 +290,6 @@ if(name==='upload-cost-document'){const selected=sampleCustomers.find(c=>c.id===
   mobileNavBackdrop?.addEventListener('click',()=>setMobileNavOpen(false));
   document.addEventListener('click',event=>{if(event.target.closest('[data-module],[data-page],[data-route]'))setMobileNavOpen(false)},true);
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.body.classList.contains('mobile-nav-open')){setMobileNavOpen(false);mobileNavToggle?.focus()}});
-  if (window.anjuAuth?.demoMode) render();
+  const demoRequested = new URLSearchParams(location.search).get('demo') === '1';
+  if (window.anjuAuth?.demoMode || demoRequested) render();
 })();

@@ -5,10 +5,27 @@
   const demoMode = new URLSearchParams(location.search).get('demo') === '1';
   const roleNames = { owner: '老板', designer: '设计师', foreman: '工长', factory_manager: '厂长' };
   const internalRoles = { owner: 'owner', designer: 'sales', foreman: 'foreman', factory_manager: 'factory' };
-  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
-  });
-  window.anjuAuth = { client, demoMode, roleNames, internalRoles };
+  // Publish the demo flag BEFORE touching the SDK. The framework script only
+  // calls render() when anjuAuth.demoMode is true, so a failed SDK load used
+  // to leave the whole page blank (empty nav + empty content).
+  window.anjuAuth = { client: null, demoMode, roleNames, internalRoles };
+  let client = null;
+  try {
+    if (window.supabase?.createClient) {
+      client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      });
+      window.anjuAuth.client = client;
+    }
+  } catch (error) {
+    console.warn('[auth] Supabase SDK unavailable:', error);
+  }
+  if (!demoMode && !client) {
+    window.addEventListener('DOMContentLoaded', () => {
+      const view = document.getElementById('view');
+      if (view) view.innerHTML = '<div style="padding:24px;color:#a32d2d">登录服务未能加载，请检查网络后刷新页面；若持续出现请联系管理员。</div>';
+    }, { once: true });
+  }
   let loadedPrincipal = '';
 
   function roleFromUser(user) {
@@ -199,6 +216,7 @@
       document.body.classList.add('demo-mode');
       return;
     }
+    if (!client) return;
     ensureShellState();
     const { data } = await client.auth.getSession();
     if (data.session?.user) await completeLogin(data.session.user);

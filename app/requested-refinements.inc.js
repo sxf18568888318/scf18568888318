@@ -75,7 +75,7 @@
   document.addEventListener('input',e=>{if(e.target.closest('#rxAttendanceRows'))rxAttendanceAmounts()},true);
 
   // Customer quotes and installment receipts share the customer's existing ledger.
-  const rxKey='anju-ui-refinements-v1';let rxState={installments:{},periodCosts:[]};
+  const rxKey='anju-ui-refinements-v1';rxState={installments:{},periodCosts:[]};
   try{rxState={...rxState,...JSON.parse(localStorage.getItem(rxKey)||'{}')}}catch{}
   function rxPersist(){localStorage.setItem(rxKey,JSON.stringify(rxState))}
   const rxLegacyMatch=(text,c)=>[c.name,`${c.name} · ${c.community}`].includes(String(text||'').trim());

@@ -162,6 +162,14 @@ cd app
 5. **提交前检查 git status**：只应看到源文件改动，不要手动编辑 `framework-preview.js`
 6. **工厂端 6 个片段文件必须相邻且保持顺序**（见 `sync-quote-preview.ps1` 的 `$jsSources`），
    Part 1 打开代码块、Part 6 闭合；中间插入其他文件或调换顺序会导致构建失败
+7. **不要改回 CDN 引入 Supabase SDK**：`app/vendor/supabase.js` 是本地副本，
+   `framework-preview.html` 引用它。国外 CDN 在国内常不可达，SDK 加载失败会让整页空白。
+8. **所有 include 共享同一个闭包**：顶层立即执行的代码不能引用后面才用
+   `const` / `let` 声明的变量（会触发暂时性死区错误，整段脚本中断、页面空白）。
+   共享工具函数尽量写成 `function` 声明（会提升），共享状态变量在
+   `framework-skeleton.js` 顶部预声明。
+9. **改完必须用无头浏览器验证一次渲染**，不能只跑 `node --check`：
+   语法检查通过不代表运行时不报错（本仓库曾因此白屏）。
 
 ## 六、给 Codex / AI 的提示模板
 

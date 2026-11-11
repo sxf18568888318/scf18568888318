@@ -9,7 +9,11 @@
   let foState;try{foState={...foEmpty,...JSON.parse(localStorage.getItem(foKey)||'{}')}}catch(_){foState=structuredClone(foEmpty)}
   let foMonth=new Date().toLocaleDateString('sv-SE').slice(0,7),foSearch='',foSource='',foStatus='';
   const foAverage=x=>Math.round((Number(x)||0)*1000000)/1000000;
-  const foDate=()=>new Date().toLocaleDateString('sv-SE'),foId=()=>`FO-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,foN=x=>Math.round((Number(x)||0)*100)/100;
+  // Function declarations are hoisted across the whole concatenated closure,
+  // so earlier include fragments can call these helpers at top level.
+  function foDate(){return new Date().toLocaleDateString('sv-SE')}
+  function foId(){return `FO-${Date.now()}-${Math.random().toString(36).slice(2,7)}`}
+  function foN(x){return Math.round((Number(x)||0)*100)/100}
   const foBtn=(label,act,id='',primary=false)=>`<button type="button" class="btn ${primary?'primary':''}" data-action="${act}" data-id="${esc(id)}">${label}</button>`;
   const foSelect=(name,label,opts,value='')=>`<label>${label}<select class="field" name="${name}">${opts.map(x=>{const v=Array.isArray(x)?x[0]:x,t=Array.isArray(x)?x[1]:x;return `<option value="${esc(v)}" ${String(v)===String(value)?'selected':''}>${esc(t)}</option>`}).join('')}</select></label>`;
   const foField=(name,label,value='',type='text',required=false)=>`<label>${label}<input class="field" name="${name}" type="${type}" value="${esc(value)}" ${required?'required':''} ${type==='number'?'min="0" step="0.01"':''}></label>`;
