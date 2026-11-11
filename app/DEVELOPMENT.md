@@ -152,12 +152,12 @@ cd app
 
 1. **小步修改，一次只改一个功能点**
 2. **改前先定位源文件**：先看文件顶部的 `Domain:` 注释
-3. **不要删除或移动 marker 注释**：
-   - `app/framework-preview.js` 中的：
-     - `// Included inside the preview`
-     - `// Give owners explicit split views`
-   - `app/framework-preview.css` 中的：
-     - `/* Room-based quotation workspace. */`
+3. **不要改动骨架文件里的占位符**：
+   - `app/framework-skeleton.js` 中的 `/* __YJ_INCLUDES__ */`
+   - `app/framework-skeleton.css` 中的 `/* __YJ_CSS_INCLUDES__ */`
+   - 构建脚本从这两个**固定骨架**读取，不再从上次生成产物里定位标记。
+     旧做法会因源文件里重复的注释导致标记漂移，每构建一次就多复制一份代码
+     （仓库曾累积 46 份重复片段）。现在连续构建的结果完全一致。
 4. **改完后必跑构建脚本**，确认 JS 语法检查通过
 5. **提交前检查 git status**：只应看到源文件改动，不要手动编辑 `framework-preview.js`
 6. **工厂端 6 个片段文件必须相邻且保持顺序**（见 `sync-quote-preview.ps1` 的 `$jsSources`），

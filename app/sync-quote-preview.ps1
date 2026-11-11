@@ -12,7 +12,8 @@
     edit them by hand.
   - To change functionality, edit the .inc.js / .logic.js / .css source files
     listed at the top of this script, then re-run it.
-  - Make sure the marker comments inside app/framework-preview.js remain intact.
+  - framework-skeleton.js / framework-skeleton.css are the stable source
+    skeletons. Keep their __YJ_INCLUDES__ / __YJ_CSS_INCLUDES__ placeholders.
 .NOTES
   Run: powershell -NoProfile -ExecutionPolicy Bypass -File .\sync-quote-preview.ps1
   Or:  npm run build
@@ -132,7 +133,17 @@ function Copy-StaticAsset ($sourceRelative, $destName) {
     $source = Join-Path $appRoot $sourceRelative
     $dest = Join-Path $distDir $destName
     if (Test-Path -LiteralPath $source) {
-        Copy-Item -LiteralPath $source -Destination $dest -Recurse -Force
+        if ((Get-Item -LiteralPath $source).PSIsContainer) {
+            # Copy the directory CONTENTS, not the directory itself.
+            # Copy-Item -Recurse onto an existing destination nests a duplicate
+            # folder (dist/vendor/vendor), which grows on every build.
+            New-Item -ItemType Directory -Path $dest -Force | Out-Null
+            Get-ChildItem -LiteralPath $source -Force | ForEach-Object {
+                Copy-Item -LiteralPath $_.FullName -Destination $dest -Recurse -Force
+            }
+        } else {
+            Copy-Item -LiteralPath $source -Destination $dest -Force
+        }
         Write-Host "  [OK] $sourceRelative -> $destName"
     } else {
         Write-Warning "  [MISS] $sourceRelative not found, skipped"
@@ -144,14 +155,14 @@ function Copy-StaticAsset ($sourceRelative, $destName) {
 # ============================================================
 Write-Host "`n[1/5] Concatenating framework-preview.js ..."
 
-$frameworkJs = Read-SourceFile 'framework-preview.js'
-$markerStart = '  // Included inside the preview'
-$markerEnd = '  // Give owners explicit split views'
-$startIndex = $frameworkJs.IndexOf($markerStart)
-$endIndex = $frameworkJs.IndexOf($markerEnd, $startIndex)
-
-if ($startIndex -lt 0 -or $endIndex -lt $startIndex) {
-    throw "Concatenation markers missing in framework-preview.js.`nExpected: $markerStart and $markerEnd.`nDo not edit framework-preview.js by hand; restore it from Git."
+# Read the IMMUTABLE skeleton, never the previous generated output.
+# The old approach searched for marker comments inside framework-preview.js,
+# but one .inc.js source repeats the start marker. That made the marker drift
+# further down on every build and duplicated include code each time.
+$frameworkJs = Read-SourceFile 'framework-skeleton.js'
+$jsPlaceholder = '/* __YJ_INCLUDES__ */'
+if (-not $frameworkJs.Contains($jsPlaceholder)) {
+    throw "Include placeholder missing in framework-skeleton.js: $jsPlaceholder"
 }
 
 $includedJs = ($jsSources | ForEach-Object {
@@ -159,7 +170,7 @@ $includedJs = ($jsSources | ForEach-Object {
     Read-SourceFile $_
 }) -join "`r`n"
 
-$mergedJs = $frameworkJs.Substring(0, $startIndex) + $includedJs + "`r`n" + $frameworkJs.Substring($endIndex)
+$mergedJs = $frameworkJs.Replace($jsPlaceholder, $includedJs)
 Write-TextFile $frameworkJsPath $mergedJs
 Write-Host "  [OK] Written framework-preview.js ($([math]::Round((Get-Item $frameworkJsPath).Length / 1KB, 1)) KB)"
 
@@ -180,11 +191,10 @@ Write-Host "  [OK] Syntax check passed"
 # ============================================================
 Write-Host "`n[3/5] Concatenating framework-preview.css ..."
 
-$frameworkCss = Read-SourceFile 'framework-preview.css'
-$cssMarker = '/* Room-based quotation workspace. */'
-$cssStartIndex = $frameworkCss.IndexOf($cssMarker)
-if ($cssStartIndex -lt 0) {
-    throw "Concatenation marker missing in framework-preview.css: $cssMarker"
+$frameworkCss = Read-SourceFile 'framework-skeleton.css'
+$cssPlaceholder = '/* __YJ_CSS_INCLUDES__ */'
+if (-not $frameworkCss.Contains($cssPlaceholder)) {
+    throw "Include placeholder missing in framework-skeleton.css: $cssPlaceholder"
 }
 
 $includedCss = ($cssSources | ForEach-Object {
@@ -192,7 +202,7 @@ $includedCss = ($cssSources | ForEach-Object {
     Read-SourceFile $_
 }) -join "`r`n"
 
-$mergedCss = $frameworkCss.Substring(0, $cssStartIndex) + $includedCss
+$mergedCss = $frameworkCss.Replace($cssPlaceholder, $includedCss)
 Write-TextFile $frameworkCssPath $mergedCss
 Write-Host "  [OK] Written framework-preview.css ($([math]::Round((Get-Item $frameworkCssPath).Length / 1KB, 1)) KB)"
 

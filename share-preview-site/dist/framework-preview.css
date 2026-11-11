@@ -723,3 +723,4 @@ body.auth-required #modalRoot { display: none !important; }
 
 /* Keep footer entry points legible after the account admin stylesheet loads. */
 @media(max-width:760px){.sidebar .side-foot .auth-side-actions .auth-side-setting{font-size:12px;padding:0}.sidebar .side-foot .auth-side-actions{display:grid;grid-template-columns:1fr;gap:6px}.sidebar .side-foot .auth-side-status{display:none!important}}
+
